@@ -3,10 +3,24 @@ const admin = require("firebase-admin");
 // Realtime Database 참조
 const db = admin.database();
 
-class Bdsm {
+class Question {
+  constructor(index, question) {
+    this.index = index;
+    this.question = question;
+  }
+
+  add() {
+    const ref = db.ref("bdsm_questions"); // "bdsm_questions" 테이블(참조) 생성
+    const newBdsmQuestionRef = ref.push(); // 고유 키로 새 데이터 생성
+    newBdsmQuestionRef.set(this);
+  }
+}
+
+class Answer {
   constructor(
     index,
-    question,
+    question_pk,
+    step,
     master_mistress_,
     slave_,
     hunter_,
@@ -31,7 +45,8 @@ class Bdsm {
     vanilla_
   ) {
     this.index = index;
-    this.question = question;
+    this.question_pk = question_pk;
+    this.step = step;
     this.master_mistress_ = master_mistress_;
     this.slave_ = slave_;
     this.hunter_ = hunter_;
@@ -56,11 +71,11 @@ class Bdsm {
     this.vanilla_ = vanilla_;
   }
 
-  addBdsm() {
-    const ref = db.ref("bdsm"); // "bdsm" 테이블(참조) 생성
+  add() {
+    const ref = db.ref("bdsm_answers"); // "bdsm" 테이블(참조) 생성
     const newBdsmRef = ref.push(); // 고유 키로 새 데이터 생성
     newBdsmRef.set(this);
   }
 }
 
-module.exports = Bdsm;
+module.exports = { Question, Answer };
