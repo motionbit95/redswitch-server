@@ -15,6 +15,63 @@ admin.initializeApp({
   databaseURL: "https://redswitch-64c62-default-rtdb.firebaseio.com",
 });
 
+// swagger
+const swaggerUi = require("swagger-ui-express");
+const swaggerJSDoc = require("swagger-jsdoc");
+
+const swaggerDefinition = {
+  openapi: "3.0.0", // 버전 설정
+  info: {
+    title: "API Documentation", // API 문서 제목
+    version: "1.0.0", // API 버전
+    description: "API documentation using Swagger",
+  },
+};
+
+const options = {
+  swaggerDefinition,
+  apis: ["./routes/*.js"], // API 문서화할 파일 경로
+};
+
+const swaggerSpec = swaggerJSDoc(options);
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// routes
+app.use(express.json());
+
+app.use("/account", require("./routes/account"));
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Retrieve a list of users
+ *     description: Retrieve a list of users from the server.
+ *     responses:
+ *       200:
+ *         description: A list of users.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   name:
+ *                     type: string
+ *                     example: John Doe
+ */
+app.get("/users", (req, res) => {
+  res.json([
+    { id: 1, name: "John Doe" },
+    { id: 2, name: "Jane Doe" },
+  ]);
+});
+
 // Realtime Database 참조
 const db = admin.database();
 
@@ -32,7 +89,7 @@ async function insertData() {
 }
 
 // 실행
-insertData().catch(console.error);
+// insertData().catch(console.error);
 
 // 모든요청에 cors 적용
 app.use(cors());
