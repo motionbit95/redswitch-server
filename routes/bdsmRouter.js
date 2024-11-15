@@ -4,6 +4,9 @@ const router = express.Router();
 const admin = require("firebase-admin");
 const Bdsm = require("../model/bdsm");
 
+const cors = require("cors");
+router.use(cors());
+
 // Realtime Database 참조
 const db = admin.database();
 

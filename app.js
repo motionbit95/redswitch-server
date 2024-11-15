@@ -1,9 +1,11 @@
 //app.js
 const express = require("express");
-const cors = require("cors");
-
 const app = express();
 const port = 8080;
+
+const cors = require("cors");
+// 모든요청에 cors 적용
+app.use(cors());
 
 // Firebase Admin SDK
 var admin = require("firebase-admin");
@@ -91,9 +93,6 @@ async function insertData() {
 
 // 실행
 // insertData().catch(console.error);
-
-// 모든요청에 cors 적용
-app.use(cors());
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
