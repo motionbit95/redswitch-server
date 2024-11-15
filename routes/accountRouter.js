@@ -1,10 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
+/** @swagger
+ * tags:
+ *   name: Account
+ *   description: Account
+ */
+
 /**
  * @swagger
  * /account/list:
  *   get:
+ *     tags:
+ *       - Account
  *     summary: Retrieve a list of users
  *     description: Retrieve a list of users from the server.
  *     responses:

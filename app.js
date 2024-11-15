@@ -22,7 +22,7 @@ const swaggerJSDoc = require("swagger-jsdoc");
 const swaggerDefinition = {
   openapi: "3.0.0", // 버전 설정
   info: {
-    title: "API Documentation", // API 문서 제목
+    title: "RedSwitch API", // API 문서 제목
     version: "1.0.0", // API 버전
     description: "API documentation using Swagger",
   },
@@ -40,7 +40,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // routes
 app.use(express.json());
 
-app.use("/account", require("./routes/account"));
+app.use("/account", require("./routes/accountRouter"));
+app.use("/bdsm", require("./routes/bdsmRouter"));
 
 /**
  * @swagger
