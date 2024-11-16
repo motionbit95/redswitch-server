@@ -59,6 +59,47 @@ router.post("/add-question", async (req, res) => {
     // Firebase에 추가
     await newBdsmQuestion.add();
 
+    let answerIndex = 1; // 기본값 (첫 번째 데이터는 1로 시작)
+
+    if (snapshot.exists()) {
+      const lastBdsm = snapshot.val();
+      const lastIndex = Object.values(lastBdsm)[0].index;
+      answerIndex = lastIndex + 1; // 마지막 index에 1을 더해 새로운 index 값 설정
+    }
+
+    for (let i = 0; i < 7; i++) {
+      const newBdsmAnswer = new Bdsm.Answer(
+        answerIndex,
+        (question_pk = newIndex),
+        (step = i + 1),
+        (master_mistress_ = 0),
+        (slave_ = 0),
+        (hunter_ = 0),
+        (prey_ = 0),
+        (brat_tamer_ = 0),
+        (brat_ = 0),
+        (owner_ = 0),
+        (pet_ = 0),
+        (daddy_mommy_ = 0),
+        (little_ = 0),
+        (sadist_ = 0),
+        (masochist_ = 0),
+        (spanker_ = 0),
+        (spankee_ = 0),
+        (degrader_ = 0),
+        (degradee_ = 0),
+        (rigger_ = 0),
+        (rope_bunny_ = 0),
+        (dominant_ = 0),
+        (submissive_ = 0),
+        (switch_ = 0),
+        (vanilla_ = 0)
+      );
+
+      await newBdsmAnswer.add();
+      answerIndex++;
+    }
+
     res.status(200).json({ message: "BDSM 질문이 정상적으로 등록되었습니다." });
   } catch (error) {
     console.error(error);
@@ -349,6 +390,195 @@ router.get("/get-answers/:question_pk", async (req, res) => {
     res.status(500).json({
       message: "BDSM 점수 데이터를 가져오는동안 오류가 발생했습니다.",
     });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/update-question:
+ *   put:
+ *     tags:
+ *       - BDSM
+ *     summary: Update a BDSM question
+ *     description: Update a BDSM question in the server.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               question_pk:
+ *                 type: integer
+ *               question:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: BDSM question updated successfully
+ *       404:
+ *         description: BDSM question not found
+ *       500:
+ *         description: Internal server error
+ * */
+router.put("/update-question", async (req, res) => {
+  const { question_pk = 0, question = "" } = req.body; // 클라이언트에서 보낸 요청 데이터
+
+  try {
+    // Firebase에서 question_pk에 해당하는 질문을 가져오기
+    const ref = db.ref("bdsm_questions");
+    const snapshot = await ref
+      .orderByChild("index")
+      .equalTo(question_pk) // 주어진 question_pk와 일치하는 항목을 찾습니다
+      .once("value");
+
+    if (!snapshot.exists()) {
+      return res
+        .status(404)
+        .json({ message: "해당 질문이 존재하지 않습니다." });
+    }
+
+    // 기존 질문을 수정
+    const existingBdsmQuestion = snapshot.val();
+    const questionKey = Object.keys(existingBdsmQuestion)[0]; // 첫 번째 항목만 수정
+
+    // 질문을 업데이트
+    const updatedBdsmQuestion = {
+      question_pk,
+      question,
+    };
+
+    // Firebase에서 해당 질문을 업데이트
+    await ref.child(questionKey).update(updatedBdsmQuestion);
+
+    // 관련된 답변을 업데이트 (만약 수정이 필요하다면)
+    const answerRef = db.ref("bdsm_answers");
+    const answerSnapshot = await answerRef
+      .orderByChild("question_pk")
+      .equalTo(question_pk)
+      .once("value");
+
+    if (answerSnapshot.exists()) {
+      const existingAnswers = answerSnapshot.val();
+      const answerKeys = Object.keys(existingAnswers);
+
+      // 각 답변을 업데이트 (원하는 필드만 수정)
+      for (const answerKey of answerKeys) {
+        const updatedAnswer = {
+          ...existingAnswers[answerKey],
+          question_pk,
+          // 필요한 값들 수정
+        };
+        await answerRef.child(answerKey).update(updatedAnswer);
+      }
+    }
+
+    res.status(200).json({ message: "BDSM 질문이 성공적으로 수정되었습니다." });
+  } catch (error) {
+    console.error("BDSM 질문 수정 오류 : ", error);
+    res.status(500).json({ message: "BDSM 질문 수정 중 오류가 발생했습니다." });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/update-answer:
+ *   put:
+ *     tags:
+ *       - BDSM
+ *     summary: Update an answer
+ *     description: Update an answer in the database.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               index:
+ *                 type: integer
+ *               question_pk:
+ *                 type: integer
+ *               step:
+ *                 type: integer
+ *               master_mistress_:
+ *                 type: integer
+ *               slave_:
+ *                 type: integer
+ *               # Add more properties as needed based on your data structure
+ *     responses:
+ *       200:
+ *         description: Answer updated successfully
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/update-answer", async (req, res) => {
+  const {
+    index,
+    question_pk,
+    step,
+    master_mistress_,
+    slave_,
+    hunter_,
+    prey_,
+    brat_tamer_,
+    brat_,
+    owner_,
+    pet_,
+    daddy_mommy_,
+    little_,
+    sadist_,
+    masochist_,
+    spanker_,
+    spankee_,
+    degrader_,
+    degradee_,
+    rigger_,
+    rope_bunny_,
+    dominant_,
+    submissive_,
+    switch_,
+    vanilla_,
+  } = req.body;
+
+  try {
+    const answer = new Bdsm.Answer(
+      index,
+      question_pk,
+      step,
+      master_mistress_,
+      slave_,
+      hunter_,
+      prey_,
+      brat_tamer_,
+      brat_,
+      owner_,
+      pet_,
+      daddy_mommy_,
+      little_,
+      sadist_,
+      masochist_,
+      spanker_,
+      spankee_,
+      degrader_,
+      degradee_,
+      rigger_,
+      rope_bunny_,
+      dominant_,
+      submissive_,
+      switch_,
+      vanilla_
+    );
+
+    await answer.update();
+
+    res
+      .status(200)
+      .json({ message: "BDSM 데이터가 성공적으로 업데이트되었습니다." });
+  } catch (error) {
+    console.error("BDSM 데이터 수정 오류: ", error);
+    res
+      .status(500)
+      .json({ message: "BDSM 데이터를 수정하는 동안 오류가 발생했습니다." });
   }
 });
 

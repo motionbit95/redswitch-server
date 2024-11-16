@@ -24,7 +24,7 @@ const swaggerJSDoc = require("swagger-jsdoc");
 const swaggerDefinition = {
   openapi: "3.0.0", // 버전 설정
   info: {
-    title: "RedSwitch API", // API 문서 제목
+    title: "Redswitch API", // API 문서 제목
     version: "1.0.0", // API 버전
     description: "API documentation using Swagger",
   },

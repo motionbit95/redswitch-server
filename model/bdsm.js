@@ -76,6 +76,58 @@ class Answer {
     const newBdsmRef = ref.push(); // 고유 키로 새 데이터 생성
     newBdsmRef.set(this);
   }
+
+  async update() {
+    try {
+      const ref = db.ref("bdsm_answers");
+      const snapshot = await ref
+        .orderByChild("index")
+        .equalTo(this.index)
+        .once("value");
+
+      if (!snapshot.exists()) {
+        throw new Error("해당 index에 해당하는 데이터가 없습니다.");
+      }
+
+      // Firebase에서 key 추출
+      const [key] = Object.keys(snapshot.val());
+
+      // 필드 값 중 `undefined` 값을 null로 변경
+      const updatedData = {
+        question_pk: this.question_pk,
+        step: this.step,
+        master_mistress_: this.master_mistress_ || null,
+        slave_: this.slave_ || null,
+        hunter_: this.hunter_ || null,
+        prey_: this.prey_ || null,
+        brat_tamer_: this.brat_tamer_ || null,
+        brat_: this.brat_ || null,
+        owner_: this.owner_ || null,
+        pet_: this.pet_ || null,
+        daddy_mommy_: this.daddy_mommy_ || null,
+        little_: this.little_ || null,
+        sadist_: this.sadist_ || null,
+        masochist_: this.masochist_ || null,
+        spanker_: this.spanker_ || null,
+        spankee_: this.spankee_ || null,
+        degrader_: this.degrader_ || null,
+        degradee_: this.degradee_ || null,
+        rigger_: this.rigger_ || null,
+        rope_bunny_: this.rope_bunny_ || null,
+        dominant_: this.dominant_ || null,
+        submissive_: this.submissive_ || null,
+        switch_: this.switch_ || null,
+        vanilla_: this.vanilla_ || null,
+      };
+
+      // 데이터 업데이트
+      await ref.child(key).update(updatedData);
+
+      console.log("BDSM 데이터가 성공적으로 업데이트되었습니다.");
+    } catch (error) {
+      console.error("BDSM 데이터 업데이트 오류: ", error.message);
+    }
+  }
 }
 
 module.exports = { Question, Answer };
