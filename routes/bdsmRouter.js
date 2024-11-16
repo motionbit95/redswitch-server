@@ -59,13 +59,21 @@ router.post("/add-question", async (req, res) => {
     // Firebase에 추가
     await newBdsmQuestion.add();
 
+    const answerRef = db.ref("bdsm_answers");
+    const answerSnapshot = await answerRef
+      .orderByChild("index")
+      .limitToLast(1)
+      .once("value");
+
     let answerIndex = 1; // 기본값 (첫 번째 데이터는 1로 시작)
 
     if (snapshot.exists()) {
-      const lastBdsm = snapshot.val();
+      const lastBdsm = answerSnapshot.val();
       const lastIndex = Object.values(lastBdsm)[0].index;
       answerIndex = lastIndex + 1; // 마지막 index에 1을 더해 새로운 index 값 설정
     }
+
+    console.log(answerIndex);
 
     for (let i = 0; i < 7; i++) {
       const newBdsmAnswer = new Bdsm.Answer(
@@ -95,6 +103,8 @@ router.post("/add-question", async (req, res) => {
         (switch_ = 0),
         (vanilla_ = 0)
       );
+
+      console.log(newBdsmAnswer);
 
       await newBdsmAnswer.add();
       answerIndex++;
@@ -568,6 +578,8 @@ router.put("/update-answer", async (req, res) => {
       switch_,
       vanilla_
     );
+
+    console.log(answer);
 
     await answer.update();
 

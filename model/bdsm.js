@@ -94,6 +94,7 @@ class Answer {
 
       // 필드 값 중 `undefined` 값을 null로 변경
       const updatedData = {
+        index: this.index,
         question_pk: this.question_pk,
         step: this.step,
         master_mistress_: this.master_mistress_ || null,
