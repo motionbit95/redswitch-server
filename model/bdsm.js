@@ -131,4 +131,55 @@ class Answer {
   }
 }
 
-module.exports = { Question, Answer };
+class Result {
+  constructor(key, tendency, description, type) {
+    this.key = key;
+    this.tendency = tendency;
+    this.description = description;
+    this.type = type;
+  }
+
+  add() {
+    const ref = db.ref("bdsm_results"); // "bdsm" 테이블(참조) 생성
+    const newBdsmRef = ref.push(); // 고유 키로 새 데이터 생성
+    newBdsmRef.set(this);
+  }
+
+  async update() {
+    try {
+      const ref = db.ref("bdsm_results");
+
+      // Firebase에서 해당 key를 가진 데이터를 조회
+      const snapshot = await ref
+        .orderByChild("key")
+        .equalTo(this.key)
+        .once("value");
+
+      // 해당 key에 해당하는 데이터가 없으면 에러 처리
+      if (!snapshot.exists()) {
+        throw new Error("해당 key에 해당하는 데이터가 없습니다.");
+      }
+
+      // Firebase에서 key 추출
+      const [key] = Object.keys(snapshot.val()).map(Number);
+
+      // 필드 값 중 `undefined`을 null로 변경
+      const updatedData = {
+        key: this.key,
+        tendency: this.tendency || null,
+        description: this.description || null,
+        type: this.type || null,
+      };
+
+      // 데이터 업데이트
+      await ref.child(key).update(updatedData);
+
+      console.log("BDSM 데이터가 성공적으로 업데이트되었습니다.");
+    } catch (error) {
+      console.error("BDSM 데이터 업데이트 오류: ", error.message);
+      throw error; // 에러를 다시 던져서 호출한 곳에서 처리할 수 있게 합니다.
+    }
+  }
+}
+
+module.exports = { Question, Answer, Result };

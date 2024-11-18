@@ -594,4 +594,99 @@ router.put("/update-answer", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /bdsm/result-update/{key}:
+ *   put:
+ *     tags:
+ *       - BDSM
+ *     summary: Update a result
+ *     description: Update a result in the database.
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The key of the result to update.
+ *     responses:
+ *       200:
+ *         description: Result updated successfully
+ *       500:
+ *         description: Internal server error
+ * */
+router.put("/result-update/:key", async (req, res) => {
+  const { key } = req.params;
+  const { description, tendency } = req.body;
+
+  try {
+    const resultObj = new Bdsm.Result(key, tendency, description);
+    await resultObj.update();
+    res
+      .status(200)
+      .json({ message: "BDSM 데이터가 성공적으로 업데이트되었습니다." });
+  } catch (error) {
+    console.error("BDSM 데이터 업데이트 오류: ", error);
+    res.status(500).json({
+      message: "BDSM 데이터를 업데이트하는 동안 오류가 발생했습니다.",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/list-all-results:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: List all BDSM results
+ *     description: Retrieve a list of all BDSM results.
+ *     responses:
+ *       200:
+ *         description: A list of BDSM results.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   key:
+ *                     type: string
+ *                     example: "1"
+ *                   result:
+ *                     type: string
+ *                     example: "1"
+ *                   description:
+ *                     type: string
+ *                     example: "1"
+ *       404:
+ *         description: No BDSM results found.
+ *       500:
+ *         description: Internal server error
+ * */
+router.get("/list-all-results", async (req, res) => {
+  try {
+    // Reference to the "bdsm_results" node
+    const ref = db.ref("bdsm_results");
+
+    // Fetch all questions
+    const snapshot = await ref.once("value");
+
+    // Check if the snapshot contains any data
+    if (!snapshot.exists()) {
+      return res.status(404).json({ message: "No questions found." });
+    }
+
+    // Convert the data into an array (using Object.values to extract the values)
+    const bdsmQuestions = Object.values(snapshot.val());
+
+    // Return the list of questions
+    res.status(200).json(bdsmQuestions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching BDSM questions." });
+  }
+});
+
 module.exports = router;
