@@ -689,7 +689,40 @@ router.get("/list-all-results", async (req, res) => {
   }
 });
 
-// 점수 합산 엔드포인트
+/**
+ * @swagger
+ * /bdsm/calculate-scores:
+ *   post:
+ *     tags:
+ *       - BDSM
+ *     summary: Calculate BDSM scores
+ *     description: Calculate BDSM scores based on the provided answers.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               answers:
+ *                 type: object
+ *                 properties:
+ *                   question_pk:
+ *                     type: number
+ *                     example: 1
+ *                   step:
+ *                     type: number
+ *                     example: 1
+ *     responses:
+ *       200:
+ *         description: BDSM scores calculated successfully
+ *       400:
+ *         description: Invalid request body
+ *       404:
+ *         description: BDSM answers not found
+ *       500:
+ *         description: Internal server error
+ * */
 router.post("/calculate-scores", async (req, res) => {
   try {
     const { answers } = req.body;
@@ -779,7 +812,44 @@ router.post("/calculate-scores", async (req, res) => {
   }
 });
 
-// 엔드포인트 정의
+/**
+ * @swagger
+ * /bdsm/save-score-result:
+ *   post:
+ *     tags:
+ *       - BDSM
+ *     summary: Save a BDSM score result
+ *     description: Save a BDSM score result in the database.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               age:
+ *                 type: number
+ *                 description: The age of the user.
+ *               gender:
+ *                 type: string
+ *                 description: The gender of the user.
+ *               isAgree:
+ *                 type: boolean
+ *                 description: Whether the user agrees to the terms and conditions.
+ *               master_mistress_total:
+ *                 type: number
+ *                 description: The total score for master_mistress.
+ *               slave_total:
+ *                 type: number
+ *                 description: The total score for slave.
+ *     responses:
+ *       200:
+ *         description: BDSM score result saved successfully
+ *       400:
+ *         description: Bad request
+ *       500:
+ *         description: Internal server error
+ * */
 router.post("/save-score-result", async (req, res) => {
   try {
     const body = req.body;
@@ -791,7 +861,7 @@ router.post("/save-score-result", async (req, res) => {
         .json({ success: false, message: "필수 데이터가 누락되었습니다." });
     }
 
-    // Firebase 참조 생성
+    // Firebase 참조 생성age:
     const ref = db.ref("bdsm_scores");
     const newResultRef = ref.push(); // 고유 키 생성
 

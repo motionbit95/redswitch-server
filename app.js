@@ -42,7 +42,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // routes
 app.use(express.json());
 
-app.use("/account", require("./routes/accountRouter"));
+app.use("/accounts", require("./routes/accountRouter"));
 app.use("/bdsm", require("./routes/bdsmRouter"));
 
 /**
