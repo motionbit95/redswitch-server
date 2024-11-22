@@ -689,4 +689,136 @@ router.get("/list-all-results", async (req, res) => {
   }
 });
 
+// 점수 합산 엔드포인트
+router.post("/calculate-scores", async (req, res) => {
+  try {
+    const { answers } = req.body;
+
+    if (!answers || typeof answers !== "object") {
+      return res
+        .status(400)
+        .json({ error: "유효한 answers 객체를 제공해주세요." });
+    }
+
+    // Firebase에서 데이터를 가져옴
+    const ref = admin.database().ref("bdsm_answers");
+    const snapshot = await ref.once("value");
+
+    if (!snapshot.exists()) {
+      return res.status(404).json({ error: "BDSM 답변 데이터가 없습니다." });
+    }
+
+    const allAnswers = snapshot.val(); // Firebase에서 가져온 모든 답변 데이터
+    const scores = {
+      master_mistress_total: 0,
+      slave_total: 0,
+      hunter_total: 0,
+      prey_total: 0,
+      brat_tamer_total: 0,
+      brat_total: 0,
+      owner_total: 0,
+      pet_total: 0,
+      daddy_mommy_total: 0,
+      little_total: 0,
+      sadist_total: 0,
+      masochist_total: 0,
+      spanker_total: 0,
+      spankee_total: 0,
+      degrader_total: 0,
+      degradee_total: 0,
+      rigger_total: 0,
+      rope_bunny_total: 0,
+      dominant_total: 0,
+      submissive_total: 0,
+      switch_total: 0,
+      vanilla_total: 0,
+    };
+
+    // 요청된 answers 데이터 기반으로 점수 합산
+    for (const [question_pk, step] of Object.entries(answers)) {
+      // 해당 question_pk에 해당하는 Answer 데이터를 찾음
+      const answerData = Object.values(allAnswers).find(
+        (answer) => answer.question_pk === parseInt(question_pk)
+      );
+
+      if (answerData) {
+        // 각 항목별 점수를 누적
+        scores.master_mistress_total += answerData.master_mistress_ || 0;
+        scores.slave_total += answerData.slave_ || 0;
+        scores.hunter_total += answerData.hunter_ || 0;
+        scores.prey_total += answerData.prey_ || 0;
+        scores.brat_tamer_total += answerData.brat_tamer_ || 0;
+        scores.brat_total += answerData.brat_ || 0;
+        scores.owner_total += answerData.owner_ || 0;
+        scores.pet_total += answerData.pet_ || 0;
+        scores.daddy_mommy_total += answerData.daddy_mommy_ || 0;
+        scores.little_total += answerData.little_ || 0;
+        scores.sadist_total += answerData.sadist_ || 0;
+        scores.masochist_total += answerData.masochist_ || 0;
+        scores.spanker_total += answerData.spanker_ || 0;
+        scores.spankee_total += answerData.spankee_ || 0;
+        scores.degrader_total += answerData.degrader_ || 0;
+        scores.degradee_total += answerData.degradee_ || 0;
+        scores.rigger_total += answerData.rigger_ || 0;
+        scores.rope_bunny_total += answerData.rope_bunny_ || 0;
+        scores.dominant_total += answerData.dominant_ || 0;
+        scores.submissive_total += answerData.submissive_ || 0;
+        scores.switch_total += answerData.switch_ || 0;
+        scores.vanilla_total += answerData.vanilla_ || 0;
+      }
+    }
+
+    // 결과 반환
+    res.json({
+      success: true,
+      totalScores: scores,
+    });
+  } catch (error) {
+    console.error("점수 계산 오류:", error);
+    res.status(500).json({ error: "점수 계산 중 오류가 발생했습니다." });
+  }
+});
+
+// 엔드포인트 정의
+router.post("/save-score-result", async (req, res) => {
+  try {
+    const body = req.body;
+
+    // 요청 데이터 유효성 검사
+    if (!body.age || !body.gender || body.isAgree === undefined) {
+      return res
+        .status(400)
+        .json({ success: false, message: "필수 데이터가 누락되었습니다." });
+    }
+
+    // Firebase 참조 생성
+    const ref = db.ref("bdsm_scores");
+    const newResultRef = ref.push(); // 고유 키 생성
+
+    // 고유 id 추가
+    const id = newResultRef.key;
+
+    // Score 객체 생성
+    const score = new Bdsm.Score({
+      id,
+      ...body, // 요청 데이터 병합
+    });
+
+    // 데이터 저장
+    await newResultRef.set(score);
+
+    console.log("데이터 저장 완료:", score);
+    res.status(200).json({
+      success: true,
+      message: "점수 데이터가 성공적으로 저장되었습니다.",
+      id,
+    });
+  } catch (error) {
+    console.error("데이터 저장 실패:", error.message);
+    res
+      .status(500)
+      .json({ success: false, message: "서버 오류가 발생했습니다." });
+  }
+});
+
 module.exports = router;
