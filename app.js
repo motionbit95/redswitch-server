@@ -37,12 +37,23 @@ const options = {
 
 const swaggerSpec = swaggerJSDoc(options);
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger UI 초기화 시 requestInterceptor 설정 추가
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+      docExpansion: "none", // 기본적으로 모든 API를 축소
+      filter: true,
+    },
+  })
+);
 
 // routes
 app.use(express.json());
 
 app.use("/accounts", require("./routes/accountRouter"));
+app.use("/providers", require("./routes/providerRouter"));
 app.use("/bdsm", require("./routes/bdsmRouter"));
 
 /**

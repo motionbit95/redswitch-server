@@ -4,9 +4,10 @@ const admin = require("firebase-admin");
 const db = admin.database();
 
 class Question {
-  constructor(index, question) {
+  constructor(index, question, question_pk) {
     this.index = index;
     this.question = question;
+    this.question_pk = question_pk;
   }
 
   add() {
@@ -145,14 +146,15 @@ class Result {
     newBdsmRef.set(this);
   }
 
+  // Firebase에서 데이터를 업데이트하는 메소드
   async update() {
     try {
-      const ref = db.ref("bdsm_results");
+      const ref = db.ref("bdsm_results"); // Firebase의 "bdsm_results" 노드를 참조
 
-      // Firebase에서 해당 key를 가진 데이터를 조회
+      // Firebase에서 실제 key 값을 기반으로 해당 데이터를 찾습니다.
       const snapshot = await ref
         .orderByChild("key")
-        .equalTo(this.key)
+        .equalTo(Number(this.key))
         .once("value");
 
       // 해당 key에 해당하는 데이터가 없으면 에러 처리
@@ -160,24 +162,23 @@ class Result {
         throw new Error("해당 key에 해당하는 데이터가 없습니다.");
       }
 
-      // Firebase에서 key 추출
-      const [key] = Object.keys(snapshot.val()).map(Number);
+      snapshot.forEach(async (childSnapshot) => {
+        // 업데이트할 데이터 객체
+        const updatedData = {
+          tendency: this.tendency || null,
+          description: this.description || null,
+          type: this.type || null,
+        };
 
-      // 필드 값 중 `undefined`을 null로 변경
-      const updatedData = {
-        key: this.key,
-        tendency: this.tendency || null,
-        description: this.description || null,
-        type: this.type || null,
-      };
-
-      // 데이터 업데이트
-      await ref.child(key).update(updatedData);
+        // 해당 key의 데이터를 업데이트
+        // `child` 메서드를 이용해 정확한 key로 접근하여 업데이트
+        await ref.child(childSnapshot.key).update(updatedData);
+      });
 
       console.log("BDSM 데이터가 성공적으로 업데이트되었습니다.");
     } catch (error) {
       console.error("BDSM 데이터 업데이트 오류: ", error.message);
-      throw error; // 에러를 다시 던져서 호출한 곳에서 처리할 수 있게 합니다.
+      throw error; // 호출한 곳에서 에러를 처리할 수 있도록 합니다.
     }
   }
 }

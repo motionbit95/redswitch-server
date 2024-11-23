@@ -18,12 +18,12 @@ const db = admin.database();
 
 /**
  * @swagger
- * /bdsm/add-question:
+ * /bdsm/questions:
  *   post:
  *     tags:
  *       - BDSM
- *     summary: Add a new BDSM question
- *     description: Add a new BDSM question to the server.
+ *     summary: 새로운 BDSM 질문을 추가하고 관련된 답변을 생성합니다.
+ *     description: 서버에 새로운 BDSM 질문을 추가합니다. 질문은 인덱스가 자동으로 할당되며, 7개의 기본 답변이 생성되어 연결됩니다.
  *     requestBody:
  *       required: true
  *       content:
@@ -33,9 +33,40 @@ const db = admin.database();
  *             properties:
  *               question:
  *                 type: string
- *                 description: The question text.
+ *                 description: 추가할 질문 텍스트입니다. (필수)
+ *     responses:
+ *       200:
+ *         description: BDSM 질문과 관련된 답변들이 정상적으로 생성되었습니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "BDSM 질문이 정상적으로 등록되었습니다."
+ *       400:
+ *         description: 잘못된 요청입니다. 질문 텍스트가 필요합니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "질문 텍스트는 필수입니다."
+ *       500:
+ *         description: 서버 오류가 발생했습니다. 질문과 답변을 등록하는 동안 문제가 발생했습니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "BDSM 질문을 등록하는동안 오류가 발생했습니다."
  */
-router.post("/add-question", async (req, res) => {
+router.post("/questions", async (req, res) => {
   const { question = "" } = req.body; // 클라이언트에서 보낸 요청 데이터
 
   try {
@@ -54,7 +85,7 @@ router.post("/add-question", async (req, res) => {
     }
 
     // Bdsm 객체 생성
-    const newBdsmQuestion = new Bdsm.Question(newIndex, question);
+    const newBdsmQuestion = new Bdsm.Question(newIndex, question, newIndex);
 
     // Firebase에 추가
     await newBdsmQuestion.add();
@@ -67,14 +98,13 @@ router.post("/add-question", async (req, res) => {
 
     let answerIndex = 1; // 기본값 (첫 번째 데이터는 1로 시작)
 
-    if (snapshot.exists()) {
+    if (answerSnapshot.exists()) {
       const lastBdsm = answerSnapshot.val();
       const lastIndex = Object.values(lastBdsm)[0].index;
       answerIndex = lastIndex + 1; // 마지막 index에 1을 더해 새로운 index 값 설정
     }
 
-    console.log(answerIndex);
-
+    // 답변 생성 및 추가
     for (let i = 0; i < 7; i++) {
       const newBdsmAnswer = new Bdsm.Answer(
         answerIndex,
@@ -104,8 +134,6 @@ router.post("/add-question", async (req, res) => {
         (vanilla_ = 0)
       );
 
-      console.log(newBdsmAnswer);
-
       await newBdsmAnswer.add();
       answerIndex++;
     }
@@ -121,229 +149,15 @@ router.post("/add-question", async (req, res) => {
 
 /**
  * @swagger
- * /bdsm/add-answer:
- *   post:
- *     tags:
- *       - BDSM
- *     summary: Add a new BDSM answer
- *     description: Add a new BDSM answer to the server.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               question_pk:
- *                 type: number
- *                 description: The question primary key.
- *               step:
- *                 type: number
- *                 description: The step value.
- *               master_mistress_:
- *                 type: number
- *                 description: The master_mistress_ value.
- *               slave_:
- *                 type: number
- *                 description: The slave_ value.
- *               hunter_:
- *                 type: number
- *                 description: The hunter_ value.
- *               prey_:
- *                 type: number
- *                 description: The prey_ value.
- *               brat_tamer_:
- *                 type: number
- *                 description: The brat_tamer_ value.
- *               brat_:
- *                 type: number
- *                 description: The brat_ value.
- *               owner_:
- *                 type: number
- *                 description: The owner_ value.
- *               pet_:
- *                 type: number
- *                 description: The pet_ value.
- *               daddy_mommy_:
- *                 type: number
- *                 description: The daddy_mommy_ value.
- *               little_:
- *                 type: number
- *                 description: The little_ value.
- *               sadist_:
- *                 type: number
- *                 description: The sadist_ value.
- *               masochist_:
- *                 type: number
- *                 description: The masochist_ value.
- *               spanker_:
- *                 type: number
- *                 description: The spanker_ value.
- *               spankee_:
- *                 type: number
- *                 description: The spankee_ value.
- *               degrader_:
- *                 type: number
- *                 description: The degrader_ value.
- *               degradee_:
- *                 type: number
- *                 description: The degradee_ value.
- *               rigger_:
- *                 type: number
- *                 description: The rigger_ value.
- *               rope_bunny_:
- *                 type: number
- *                 description: The rope_bunny_ value.
- *               dominant_:
- *                 type: number
- *                 description: The dominant_ value.
- *               submissive_:
- *                 type: number
- *                 description: The submissive_ value.
- *               switch_:
- *                 type: number
- *                 description: The switch_ value.
- *               vanilla_:
- *                 type: number
- *                 description: The vanilla_ value.
- */
-router.post("/add-answer", async (req, res) => {
-  const {
-    question_pk = 0,
-    step = 1,
-    master_mistress_ = 0,
-    slave_ = 0,
-    hunter_ = 0,
-    prey_ = 0,
-    brat_tamer_ = 0,
-    brat_ = 0,
-    owner_ = 0,
-    pet_ = 0,
-    daddy_mommy_ = 0,
-    little_ = 0,
-    sadist_ = 0,
-    masochist_ = 0,
-    spanker_ = 0,
-    spankee_ = 0,
-    degrader_ = 0,
-    degradee_ = 0,
-    rigger_ = 0,
-    rope_bunny_ = 0,
-    dominant_ = 0,
-    submissive_ = 0,
-    switch_ = 0,
-    vanilla_ = 0,
-  } = req.body; // 클라이언트에서 보낸 요청 데이터
-
-  try {
-    // Firebase에서 가장 큰 index 값 가져오기
-    const ref = db.ref("bdsm_answers");
-    const snapshot = await ref
-      .orderByChild("index")
-      .limitToLast(1)
-      .once("value");
-
-    let newIndex = 1; // 기본값 (첫 번째 데이터는 1로 시작)
-
-    if (snapshot.exists()) {
-      const lastBdsm = snapshot.val();
-      const lastIndex = Object.values(lastBdsm)[0].index;
-      newIndex = lastIndex + 1; // 마지막 index에 1을 더해 새로운 index 값 설정
-    }
-
-    // Bdsm 객체 생성
-    const newBdsmAnswer = new Bdsm.Answer(
-      newIndex,
-      question_pk,
-      step,
-      master_mistress_,
-      slave_,
-      hunter_,
-      prey_,
-      brat_tamer_,
-      brat_,
-      owner_,
-      pet_,
-      daddy_mommy_,
-      little_,
-      sadist_,
-      masochist_,
-      spanker_,
-      spankee_,
-      degrader_,
-      degradee_,
-      rigger_,
-      rope_bunny_,
-      dominant_,
-      submissive_,
-      switch_,
-      vanilla_
-    );
-
-    // Firebase에 추가
-    await newBdsmAnswer.add();
-
-    res.status(200).json({ message: "BDSM 점수가 정상적으로 추가되었습니다." });
-  } catch (error) {
-    console.error("BDSM 데이터 삽입 오류 : ", error);
-    res
-      .status(500)
-      .json({ message: "BDSM 데이터 삽입을 하는동안 오류가 발생했습니다." });
-  }
-});
-
-/**
- * @swagger
- * /bdsm/list-all-questions:
+ * /bdsm/questions:
  *   get:
  *     tags:
  *       - BDSM
- *     summary: List all BDSM questions
- *     description: Retrieve a list of all BDSM questions.
- */
-router.get("/list-all-questions", async (req, res) => {
-  try {
-    // Reference to the "bdsm_questions" node
-    const ref = db.ref("bdsm_questions");
-
-    // Fetch all questions
-    const snapshot = await ref.once("value");
-
-    // Check if the snapshot contains any data
-    if (!snapshot.exists()) {
-      return res.status(404).json({ message: "No questions found." });
-    }
-
-    // Convert the data into an array (using Object.values to extract the values)
-    const bdsmQuestions = Object.values(snapshot.val());
-
-    // Return the list of questions
-    res.status(200).json(bdsmQuestions);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching BDSM questions." });
-  }
-});
-
-/**
- * @swagger
- * /bdsm/get-answers/{question_pk}:
- *   get:
- *     tags:
- *       - BDSM
- *     summary: Get answers for a specific BDSM question
- *     description: Retrieve a list of answers for a specific BDSM question.
- *     parameters:
- *       - in: path
- *         name: question_pk
- *         required: true
- *         description: The primary key of the BDSM question.
- *         schema:
- *           type: integer
- *           format: int64
+ *     summary: 모든 BDSM 질문 목록을 가져옵니다.
+ *     description: 서버에서 모든 BDSM 질문을 가져와 목록을 반환합니다.
  *     responses:
  *       200:
- *         description: List of answers for the question
+ *         description: BDSM 질문 목록을 성공적으로 가져왔습니다.
  *         content:
  *           application/json:
  *             schema:
@@ -353,64 +167,66 @@ router.get("/list-all-questions", async (req, res) => {
  *                 properties:
  *                   index:
  *                     type: integer
+ *                     description: 질문 order
+ *                   question:
+ *                     type: string
+ *                     description: BDSM 질문 텍스트
  *                   question_pk:
  *                     type: integer
- *                   step:
- *                     type: integer
- *                   master_mistress_:
- *                     type: integer
- *                   slave_:
- *                     type: integer
- *                   # Add more properties as needed based on your data structure
+ *                     description: 질문의 고유 인덱스
  *       404:
- *         description: No answers found for the given question
+ *         description: 질문이 없습니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "질문이 없습니다."
  *       500:
- *         description: Internal server error
+ *         description: 서버 오류가 발생했습니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "서버 오류가 발생했습니다."
  */
-router.get("/get-answers/:question_pk", async (req, res) => {
-  const { question_pk } = req.params; // Get question_pk from the URL parameter
-
+router.get("/questions", async (req, res) => {
   try {
-    // Reference to the "bdsm_answers" node
-    const ref = db.ref("bdsm_answers");
+    // Reference to the "bdsm_questions" node
+    const ref = db.ref("bdsm_questions");
 
-    // Query Firebase to filter answers by `question_pk`
-    const snapshot = await ref
-      .orderByChild("question_pk")
-      .equalTo(Number(question_pk))
-      .once("value");
+    // Fetch all questions
+    const snapshot = await ref.once("value");
 
     // Check if the snapshot contains any data
     if (!snapshot.exists()) {
-      return res.status(404).json({
-        message: "해당 질문에 대한 점수 데이터가 존재하지 않습니다.",
-      });
+      return res.status(404).json({ message: "질문이 없습니다." });
     }
 
     // Convert the data into an array (using Object.values to extract the values)
-    const bdsmAnswers = Object.values(snapshot.val());
+    const bdsmQuestions = Object.values(snapshot.val());
 
-    // Return the list of answers
-    res.status(200).json(bdsmAnswers);
+    // Return the list of questions
+    res.status(200).json(bdsmQuestions);
   } catch (error) {
-    console.error(
-      "BDSM 점수 데이터를 가져오는동안 오류가 발생했습니다 : ",
-      error
-    );
-    res.status(500).json({
-      message: "BDSM 점수 데이터를 가져오는동안 오류가 발생했습니다.",
-    });
+    console.error(error);
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
 /**
  * @swagger
- * /bdsm/update-question:
+ * /bdsm/questions:
  *   put:
  *     tags:
  *       - BDSM
- *     summary: Update a BDSM question
- *     description: Update a BDSM question in the server.
+ *     summary: BDSM 질문 수정
+ *     description: 서버에서 BDSM 질문을 수정합니다.
  *     requestBody:
  *       required: true
  *       content:
@@ -420,17 +236,19 @@ router.get("/get-answers/:question_pk", async (req, res) => {
  *             properties:
  *               question_pk:
  *                 type: integer
+ *                 description: 수정할 질문의 고유 인덱스
  *               question:
  *                 type: string
+ *                 description: 수정된 질문 텍스트
  *     responses:
  *       200:
- *         description: BDSM question updated successfully
+ *         description: BDSM 질문이 성공적으로 수정되었습니다.
  *       404:
- *         description: BDSM question not found
+ *         description: 해당 BDSM 질문을 찾을 수 없습니다.
  *       500:
- *         description: Internal server error
- * */
-router.put("/update-question", async (req, res) => {
+ *         description: 내부 서버 오류가 발생했습니다.
+ */
+router.put("/questions", async (req, res) => {
   const { question_pk = 0, question = "" } = req.body; // 클라이언트에서 보낸 요청 데이터
 
   try {
@@ -442,9 +260,7 @@ router.put("/update-question", async (req, res) => {
       .once("value");
 
     if (!snapshot.exists()) {
-      return res
-        .status(404)
-        .json({ message: "해당 질문이 존재하지 않습니다." });
+      return res.status(404).json({ message: "해당 질문을 찾을 수 없습니다." });
     }
 
     // 기존 질문을 수정
@@ -491,12 +307,181 @@ router.put("/update-question", async (req, res) => {
 
 /**
  * @swagger
- * /bdsm/update-answer:
+ * /bdsm/questions/{id}:
+ *   delete:
+ *     tags:
+ *       - BDSM
+ *     summary: 특정 BDSM 질문과 관련된 답변들을 삭제합니다.
+ *     description: 주어진 `id`에 해당하는 BDSM 질문과 그에 연관된 모든 답변을 삭제합니다.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: 삭제할 질문의 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: BDSM 질문과 관련된 모든 답변이 정상적으로 삭제되었습니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "BDSM 질문과 관련된 모든 답변이 정상적으로 삭제되었습니다."
+ *       404:
+ *         description: 질문을 찾을 수 없습니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "해당 질문을 찾을 수 없습니다."
+ *       500:
+ *         description: 질문과 답변을 삭제하는 동안 오류가 발생했습니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "BDSM 질문을 삭제하는 동안 오류가 발생했습니다."
+ */
+router.delete("/questions/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Firebase에서 index 값으로 질문 정보 가져오기
+    const questionRef = db.ref("bdsm_questions");
+    const questionSnapshot = await questionRef
+      .orderByChild("index") // 'index' 필드를 기준으로 정렬
+      .equalTo(Number(id)) // 'id' 값과 일치하는 항목을 찾음
+      .once("value");
+
+    if (!questionSnapshot.exists()) {
+      return res.status(404).json({ message: "해당 질문을 찾을 수 없습니다." });
+    }
+
+    // 질문 삭제
+    const questionKey = Object.keys(questionSnapshot.val())[0]; // 첫 번째 항목의 key 가져오기
+    await questionRef.child(questionKey).remove();
+
+    // 해당 질문에 대한 모든 답변 삭제
+    const answerRef = db.ref("bdsm_answers");
+    const answersSnapshot = await answerRef
+      .orderByChild("question_pk") // 'question_pk' 기준으로 정렬
+      .equalTo(Number(id)) // question_pk가 id와 일치하는 답변들을 찾음
+      .once("value");
+
+    if (answersSnapshot.exists()) {
+      const answerData = answersSnapshot.val();
+      for (const key in answerData) {
+        await db.ref("bdsm_answers").child(key).remove(); // 각 답변 삭제
+      }
+    }
+
+    res.status(200).json({
+      message: "BDSM 질문과 관련된 모든 답변이 정상적으로 삭제되었습니다.",
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "BDSM 질문을 삭제하는 동안 오류가 발생했습니다." });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/answers/{question_pk}:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: 특정 BDSM 질문에 대한 답변 목록을 가져옵니다
+ *     description: 특정 BDSM 질문에 대한 답변 목록을 조회합니다.
+ *     parameters:
+ *       - in: path
+ *         name: question_pk
+ *         required: true
+ *         description: BDSM 질문의 기본 키
+ *         schema:
+ *           type: integer
+ *           format: int64
+ *     responses:
+ *       200:
+ *         description: 해당 질문에 대한 답변 목록
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   index:
+ *                     type: integer
+ *                   question_pk:
+ *                     type: integer
+ *                   step:
+ *                     type: integer
+ *                   master_mistress_:
+ *                     type: integer
+ *                   slave_:
+ *                     type: integer
+ *                   # 필요에 따라 데이터 구조에 맞게 추가 속성들을 넣으세요.
+ *       404:
+ *         description: 주어진 질문에 대한 답변이 없습니다.
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.get("/answers/:question_pk", async (req, res) => {
+  const { question_pk } = req.params; // Get question_pk from the URL parameter
+
+  try {
+    // Reference to the "bdsm_answers" node
+    const ref = db.ref("bdsm_answers");
+
+    // Query Firebase to filter answers by `question_pk`
+    const snapshot = await ref
+      .orderByChild("question_pk")
+      .equalTo(Number(question_pk))
+      .once("value");
+
+    // Check if the snapshot contains any data
+    if (!snapshot.exists()) {
+      return res.status(404).json({
+        message: "해당 질문에 대한 점수 데이터가 존재하지 않습니다.",
+      });
+    }
+
+    // Convert the data into an array (using Object.values to extract the values)
+    const bdsmAnswers = Object.values(snapshot.val());
+
+    // Return the list of answers
+    res.status(200).json(bdsmAnswers);
+  } catch (error) {
+    console.error(
+      "BDSM 점수 데이터를 가져오는동안 오류가 발생했습니다 : ",
+      error
+    );
+    res.status(500).json({
+      message: "BDSM 점수 데이터를 가져오는동안 오류가 발생했습니다.",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/answers:
  *   put:
  *     tags:
  *       - BDSM
- *     summary: Update an answer
- *     description: Update an answer in the database.
+ *     summary: 답변을 수정합니다
+ *     description: 데이터베이스에서 답변을 수정합니다.
  *     requestBody:
  *       required: true
  *       content:
@@ -514,14 +499,14 @@ router.put("/update-question", async (req, res) => {
  *                 type: integer
  *               slave_:
  *                 type: integer
- *               # Add more properties as needed based on your data structure
+ *               # 데이터 구조에 맞게 필요한 추가 속성들을 넣으세요
  *     responses:
  *       200:
- *         description: Answer updated successfully
+ *         description: 답변이 성공적으로 업데이트되었습니다
  *       500:
- *         description: Internal server error
+ *         description: 서버 내부 오류
  */
-router.put("/update-answer", async (req, res) => {
+router.put("/answers", async (req, res) => {
   const {
     index,
     question_pk,
@@ -596,32 +581,244 @@ router.put("/update-answer", async (req, res) => {
 
 /**
  * @swagger
- * /bdsm/result-update/{key}:
- *   put:
+ * /bdsm/results:
+ *   post:
  *     tags:
  *       - BDSM
- *     summary: Update a result
- *     description: Update a result in the database.
+ *     summary: 새로운 결과 추가
+ *     description: 데이터베이스에 새로운 BDSM 결과를 추가합니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               tendency:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: 결과가 성공적으로 추가되었습니다.
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.post("/results", async (req, res) => {
+  const { tendency, description, type } = req.body;
+
+  try {
+    // "bdsm_results" 노드에서 가장 큰 index 값을 찾기
+    const ref = db.ref("bdsm_results");
+    const snapshot = await ref.once("value");
+
+    let lastIndex = 0; // 기본값 설정
+    if (snapshot.exists()) {
+      const results = snapshot.val();
+      const resultKeys = Object.keys(results);
+
+      // 가장 큰 index 값을 찾기
+      resultKeys.forEach((key) => {
+        const result = results[key];
+        if (result.key > lastIndex) {
+          lastIndex = result.key;
+        }
+      });
+    }
+
+    // 새로운 index는 마지막 index + 1
+    const newIndex = lastIndex + 1;
+
+    console.log(newIndex);
+
+    const newResult = new Bdsm.Result(newIndex, tendency, description, type);
+
+    await newResult.add();
+
+    res.status(201).json({ message: "BDSM 결과가 성공적으로 추가되었습니다." });
+  } catch (error) {
+    console.error("BDSM 결과 추가 오류: ", error);
+    res.status(500).json({
+      message: "BDSM 결과를 추가하는 동안 오류가 발생했습니다.",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/results:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: 모든 BDSM 결과 목록 조회
+ *     description: 모든 BDSM 결과의 목록을 조회합니다.
+ *     responses:
+ *       200:
+ *         description: BDSM 결과 목록
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   key:
+ *                     type: number
+ *                     example: 1
+ *                   result:
+ *                     type: string
+ *                     example: "Some result data"
+ *                   description:
+ *                     type: string
+ *                     example: "description"
+ *                   type:
+ *                     type: string
+ *                     example: "type_"
+ *       404:
+ *         description: BDSM 결과가 존재하지 않습니다.
+ *       500:
+ *         description: 서버 내부 오류
+ * */
+router.get("/results", async (req, res) => {
+  try {
+    // "bdsm_results" 노드에 대한 참조
+    const ref = db.ref("bdsm_results");
+
+    // 모든 BDSM 결과 가져오기
+    const snapshot = await ref.once("value");
+
+    // 데이터가 존재하는지 확인
+    if (!snapshot.exists()) {
+      return res
+        .status(404)
+        .json({ message: "BDSM 결과가 존재하지 않습니다." });
+    }
+
+    // 데이터를 배열로 변환 (Object.values를 사용하여 값만 추출)
+    const bdsmResults = Object.values(snapshot.val());
+
+    // BDSM 결과 목록 반환
+    res.status(200).json(bdsmResults);
+  } catch (error) {
+    console.error("BDSM 결과 조회 오류: ", error);
+    res
+      .status(500)
+      .json({ message: "BDSM 결과를 조회하는 동안 오류가 발생했습니다." });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/results/{key}:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: 특정 결과 조회
+ *     description: 특정 BDSM 결과를 키를 기준으로 조회합니다.
  *     parameters:
  *       - in: path
  *         name: key
  *         required: true
  *         schema:
  *           type: string
- *         description: The key of the result to update.
+ *         description: 조회할 결과의 고유 키
  *     responses:
  *       200:
- *         description: Result updated successfully
+ *         description: BDSM 결과 객체
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 key:
+ *                   type: string
+ *                   example: "1"
+ *                 result:
+ *                   type: string
+ *                   example: "Some result data"
+ *       404:
+ *         description: 결과를 찾을 수 없습니다.
  *       500:
- *         description: Internal server error
- * */
-router.put("/result-update/:key", async (req, res) => {
+ *         description: 서버 내부 오류
+ */
+router.get("/results/:key", async (req, res) => {
   const { key } = req.params;
-  const { description, tendency } = req.body;
 
   try {
-    const resultObj = new Bdsm.Result(key, tendency, description);
+    // Firebase에서 index 값으로 질문 정보 가져오기
+    const ref = db.ref("bdsm_results");
+    const snapshot = await ref
+      .orderByChild("key") // 'index' 필드를 기준으로 정렬
+      .equalTo(Number(key)) // 'id' 값과 일치하는 항목을 찾음
+      .once("value");
+
+    if (!snapshot.exists()) {
+      return res.status(404).json({ message: "결과를 찾을 수 없습니다." });
+    }
+
+    const result = snapshot.val();
+
+    console.log(result);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("BDSM 결과 조회 오류: ", error);
+    res.status(500).json({
+      message: "BDSM 결과를 조회하는 동안 오류가 발생했습니다.",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/results/{key}:
+ *   put:
+ *     tags:
+ *       - BDSM
+ *     summary: BDSM 결과 업데이트
+ *     description: 데이터베이스에서 BDSM 결과를 업데이트합니다.
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 업데이트할 결과의 고유 키
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               result:
+ *                 type: string
+ *                 example: "Updated result"
+ *               description:
+ *                 type: string
+ *                 example: "Updated description"
+ *               tendency:
+ *                 type: string
+ *                 example: "Updated tendency"
+ *     responses:
+ *       200:
+ *         description: BDSM 결과가 성공적으로 업데이트되었습니다.
+ *       500:
+ *         description: 서버 내부 오류
+ * */
+router.put("/results/:key", async (req, res) => {
+  const { key } = req.params; // URL에서 key 값을 가져옴
+  const { description, tendency, type } = req.body; // 요청 본문에서 업데이트할 데이터
+
+  try {
+    // Result 객체를 생성합니다. key는 URL 파라미터에서 전달된 값입니다.
+    const resultObj = new Bdsm.Result(key, tendency, description, type);
+
+    // Result 객체의 update 메소드 호출하여 해당 key에 대해 업데이트를 진행
     await resultObj.update();
+
+    // 업데이트 완료 후 성공 메시지 반환
     res
       .status(200)
       .json({ message: "BDSM 데이터가 성공적으로 업데이트되었습니다." });
@@ -635,57 +832,43 @@ router.put("/result-update/:key", async (req, res) => {
 
 /**
  * @swagger
- * /bdsm/list-all-results:
- *   get:
+ * /bdsm/results/{key}:
+ *   delete:
  *     tags:
  *       - BDSM
- *     summary: List all BDSM results
- *     description: Retrieve a list of all BDSM results.
+ *     summary: 결과 삭제
+ *     description: 데이터베이스에서 특정 BDSM 결과를 삭제합니다.
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 삭제할 결과의 고유 키
  *     responses:
  *       200:
- *         description: A list of BDSM results.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   key:
- *                     type: string
- *                     example: "1"
- *                   result:
- *                     type: string
- *                     example: "1"
- *                   description:
- *                     type: string
- *                     example: "1"
- *       404:
- *         description: No BDSM results found.
+ *         description: 결과가 성공적으로 삭제되었습니다.
  *       500:
- *         description: Internal server error
- * */
-router.get("/list-all-results", async (req, res) => {
-  try {
-    // Reference to the "bdsm_results" node
-    const ref = db.ref("bdsm_results");
+ *         description: 서버 내부 오류
+ */
+router.delete("/results/:key", async (req, res) => {
+  const { key } = req.params;
 
-    // Fetch all questions
+  try {
+    const ref = db.ref("bdsm_results").child(key);
     const snapshot = await ref.once("value");
 
-    // Check if the snapshot contains any data
     if (!snapshot.exists()) {
-      return res.status(404).json({ message: "No questions found." });
+      return res.status(404).json({ message: "결과를 찾을 수 없습니다." });
     }
 
-    // Convert the data into an array (using Object.values to extract the values)
-    const bdsmQuestions = Object.values(snapshot.val());
-
-    // Return the list of questions
-    res.status(200).json(bdsmQuestions);
+    await ref.remove();
+    res.status(200).json({ message: "BDSM 결과가 성공적으로 삭제되었습니다." });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching BDSM questions." });
+    console.error("BDSM 데이터 삭제 오류: ", error);
+    res.status(500).json({
+      message: "BDSM 데이터를 삭제하는 동안 오류가 발생했습니다.",
+    });
   }
 });
 
