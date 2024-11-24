@@ -52,6 +52,7 @@ app.use(
 // routes
 app.use(express.json());
 
+app.use("/", require("./routes/commonRouter"));
 app.use("/accounts", require("./routes/accountRouter"));
 app.use("/providers", require("./routes/providerRouter"));
 app.use("/branches", require("./routes/branchRouter"));

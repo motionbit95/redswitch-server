@@ -14,7 +14,7 @@ class Provider {
     this.provider_brn = data.provider_brn;
     this.bankbook_file = data.bankbook_file || null;
     this.bank_account_number = data.bank_account_number || null;
-    this.business_file = data.business_file;
+    this.business_file = data.business_file || null;
     this.provider_ceo_name = data.provider_ceo_name;
     this.provider_ceo_phone = data.provider_ceo_phone;
     this.provider_manager_name = data.provider_manager_name;

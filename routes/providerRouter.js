@@ -3,6 +3,7 @@ const Provider = require("../model/Provider");
 const router = express.Router();
 
 router.post("/", async (req, res) => {
+  console.log(req.body);
   try {
     const provider = new Provider(req.body);
     const newProvider = await provider.create();
