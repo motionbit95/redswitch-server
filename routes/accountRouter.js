@@ -28,7 +28,7 @@ router.post("/", async (req, res) => {
       user_password: hashedPassword,
     });
     await newAccount.create();
-    res.status(201).send({ message: "계정 생성 성공" });
+    res.status(201).send({ message: "계정 생성 성공", account: newAccount });
   } catch (error) {
     console.error("계정 생성 오류:", error);
     res.status(500).send({ error: "계정 생성 실패" });
@@ -74,6 +74,15 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = req.body;
+
+    // 비밀번호는 해싱 필요
+    if (updatedData.user_password) {
+      updatedData.user_password = await bcrypt.hash(
+        updatedData.user_password,
+        10
+      );
+    }
+
     updatedData.updated_at = new Date().toISOString();
     await accountsRef.child(id).update(updatedData);
     res.status(200).send({ message: "계정 수정 성공" });

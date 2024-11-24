@@ -638,7 +638,10 @@ router.post("/results", async (req, res) => {
 
     await newResult.add();
 
-    res.status(201).json({ message: "BDSM 결과가 성공적으로 추가되었습니다." });
+    res.status(201).json({
+      message: "BDSM 결과가 성공적으로 추가되었습니다.",
+      result: newResult,
+    });
   } catch (error) {
     console.error("BDSM 결과 추가 오류: ", error);
     res.status(500).json({
@@ -856,15 +859,29 @@ router.delete("/results/:key", async (req, res) => {
   const { key } = req.params;
 
   try {
-    const ref = db.ref("bdsm_results").child(key);
-    const snapshot = await ref.once("value");
+    const ref = db.ref("bdsm_results");
+    const snapshot = await ref
+      .orderByChild("key")
+      .equalTo(Number(key))
+      .once("value");
 
     if (!snapshot.exists()) {
       return res.status(404).json({ message: "결과를 찾을 수 없습니다." });
     }
 
-    await ref.remove();
-    res.status(200).json({ message: "BDSM 결과가 성공적으로 삭제되었습니다." });
+    // Assuming snapshot.val() returns an object of results with unique keys
+    const resultKey = Object.keys(snapshot.val())[0]; // Get the key of the first result matching
+
+    if (resultKey) {
+      // Use the resultKey to remove the corresponding entry
+      await ref.child(resultKey).remove();
+
+      return res
+        .status(200)
+        .json({ message: "BDSM 결과가 성공적으로 삭제되었습니다." });
+    } else {
+      return res.status(404).json({ message: "결과를 찾을 수 없습니다." });
+    }
   } catch (error) {
     console.error("BDSM 데이터 삭제 오류: ", error);
     res.status(500).json({
