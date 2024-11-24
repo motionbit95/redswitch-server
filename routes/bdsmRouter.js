@@ -439,6 +439,7 @@ router.delete("/questions/:id", async (req, res) => {
  *         description: 서버 내부 오류
  */
 router.get("/answers/:question_pk", async (req, res) => {
+  // 현재 사용하지는 않음 - krystal
   const { question_pk } = req.params; // Get question_pk from the URL parameter
 
   try {
