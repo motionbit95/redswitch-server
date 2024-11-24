@@ -7,7 +7,10 @@ router.post("/", async (req, res) => {
   try {
     const provider = new Provider(req.body);
     const newProvider = await provider.create();
-    res.status(201).send(newProvider);
+    res.status(201).send({
+      message: "Provider created successfully",
+      provider: newProvider,
+    });
   } catch (error) {
     console.error("Error creating provider:", error);
     res.status(500).send({ error: "Failed to create provider" });

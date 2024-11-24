@@ -15,6 +15,7 @@ var serviceAccount = require("./serviceAccountKey.json");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://redswitch-64c62-default-rtdb.firebaseio.com",
+  storageBucket: "redswitch-64c62.firebasestorage.app",
 });
 
 // swagger
