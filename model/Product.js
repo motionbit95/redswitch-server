@@ -4,6 +4,7 @@ const admin = require("firebase-admin");
 const database = admin.database();
 const categoriesRef = database.ref("categories"); // 'categories' 경로 참조
 const materialsRef = database.ref("materials"); // 'materials' 경로 참조
+const productsRef = database.ref("products"); // 'products' 경로 참조
 
 class Category {
   constructor(data) {
@@ -235,4 +236,118 @@ class Material {
   }
 }
 
-module.exports = { Category, Material };
+class Product {
+  constructor(data) {
+    this.PK = data.PK || null; // 데이터베이스에서 자동 생성됨
+    this.product_code = data.product_code;
+    this.branch_id = data.branch_id;
+    this.product_name = data.product_name;
+    this.product_price = data.product_price || 0;
+    this.product_image = data.product_image;
+    this.blurred_image = data.blurred_image || null;
+    this.created_at = data.created_at || new Date().toISOString();
+    this.updated_at = data.updated_at || null;
+  }
+
+  toJSON() {
+    return {
+      product_code: this.product_code,
+      branch_id: this.branch_id,
+      product_name: this.product_name,
+      product_price: this.product_price,
+      product_image: this.product_image,
+      blurred_image: this.blurred_image,
+      created_at: this.created_at,
+      updated_at: this.updated_at,
+    };
+  }
+
+  // Create a new product
+  async create() {
+    try {
+      const newProductRef = await productsRef.push(this.toJSON());
+      this.PK = newProductRef.key;
+      await newProductRef.update({ PK: this.PK });
+      return this;
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw new Error("Failed to create product");
+    }
+  }
+
+  // Get a product by PK
+  static async getByPK(PK) {
+    try {
+      const snapshot = await productsRef.child(PK).once("value");
+      if (!snapshot.exists()) {
+        throw new Error("Product not found");
+      }
+      return { PK, ...snapshot.val() };
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      throw new Error("Failed to fetch product");
+    }
+  }
+
+  // Get all products
+  static async getAll() {
+    try {
+      const snapshot = await productsRef.once("value");
+      if (!snapshot.exists()) {
+        return [];
+      }
+      const products = [];
+      snapshot.forEach((child) => {
+        products.push({ PK: child.key, ...child.val() });
+      });
+      return products;
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      throw new Error("Failed to fetch products");
+    }
+  }
+
+  // Update a product by PK
+  async update() {
+    try {
+      if (!this.PK) {
+        throw new Error("Product PK is required for update");
+      }
+
+      this.updated_at = new Date().toISOString();
+
+      const updateData = Object.fromEntries(
+        Object.entries(this.toJSON()).filter(
+          ([_, value]) => value !== undefined
+        )
+      );
+
+      if (Object.keys(updateData).length === 0) {
+        throw new Error("No valid fields to update");
+      }
+
+      await productsRef.child(this.PK).update(updateData);
+      return this;
+    } catch (error) {
+      console.error("Error updating product:", error);
+      throw new Error("Failed to update product");
+    }
+  }
+
+  // Delete a product by PK
+  static async deleteByPK(PK) {
+    try {
+      const snapshot = await productsRef.child(PK).once("value");
+      if (!snapshot.exists()) {
+        throw new Error("Product not found");
+      }
+      await productsRef.child(PK).remove();
+      return { message: "Product deleted successfully" };
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      throw new Error("Failed to delete product");
+    }
+  }
+}
+
+module.exports = { Category, Material, Product };

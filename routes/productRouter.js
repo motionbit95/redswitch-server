@@ -1,6 +1,6 @@
 const express = require("express");
 const admin = require("firebase-admin");
-const { Category, Material } = require("../model/Product");
+const { Category, Material, Product } = require("../model/Product");
 
 const router = express.Router();
 
@@ -19,6 +19,13 @@ router.use(cors());
  * tags:
  *   name: Materials
  *   description: 물자 CRUD API
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Products
+ *   description: 판매상품 CRUD API
  */
 
 // Create a new category
@@ -582,6 +589,247 @@ router.delete("/materials/:pk", async (req, res) => {
   } catch (error) {
     console.error("물자 삭제 오류:", error);
     res.status(500).json({ message: "물자 삭제 실패", error: error.message });
+  }
+});
+
+// Create a new product
+/**
+ * @swagger
+ * /products:
+ *   post:
+ *     summary: 새로운 상품을 생성합니다.
+ *     description: 제공된 정보를 바탕으로 새로운 상품을 생성합니다.
+ *     tags: [Products]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - product_code
+ *               - branch_id
+ *               - product_name
+ *               - product_price
+ *               - product_image
+ *             properties:
+ *               product_code:
+ *                 type: string
+ *                 description: 상품 코드
+ *               branch_id:
+ *                 type: string
+ *                 description: 지점 ID
+ *               product_name:
+ *                 type: string
+ *                 description: 상품명
+ *               product_price:
+ *                 type: integer
+ *                 description: 판매가
+ *               product_image:
+ *                 type: string
+ *                 description: 상품 이미지 URL
+ *               blurred_image:
+ *                 type: string
+ *                 description: 미리보기 방지 이미지 URL
+ *     responses:
+ *       201:
+ *         description: 상품 생성 성공
+ *       400:
+ *         description: 필수 필드 누락
+ *       500:
+ *         description: 서버 오류
+ */
+router.post("/", async (req, res) => {
+  try {
+    const {
+      product_code,
+      branch_id,
+      product_name,
+      product_price,
+      product_image,
+    } = req.body;
+
+    if (
+      !product_code ||
+      !branch_id ||
+      !product_name ||
+      !product_price ||
+      !product_image
+    ) {
+      return res.status(400).json({ message: "필수 필드가 누락되었습니다." });
+    }
+
+    const product = new Product(req.body);
+    const createdProduct = await product.create();
+    res.status(201).json(createdProduct);
+  } catch (error) {
+    console.error("상품 생성 오류:", error);
+    res.status(500).json({ message: "상품 생성 실패", error: error.message });
+  }
+});
+
+// Get a product by PK
+/**
+ * @swagger
+ * /products/{PK}:
+ *   get:
+ *     summary: 상품 정보를 조회합니다.
+ *     description: 주어진 PK로 상품 정보를 조회합니다.
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: PK
+ *         required: true
+ *         description: 상품 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 상품 조회 성공
+ *       404:
+ *         description: 상품을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/:PK", async (req, res) => {
+  try {
+    const { PK } = req.params;
+    const product = await Product.getByPK(PK);
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("상품 조회 오류:", error);
+    res.status(500).json({ message: "상품 조회 실패", error: error.message });
+  }
+});
+
+// Get all products
+/**
+ * @swagger
+ * /products:
+ *   get:
+ *     summary: 모든 상품 정보를 조회합니다.
+ *     description: 모든 상품 정보를 조회하여 반환합니다.
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: 상품 리스트 조회 성공
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/", async (req, res) => {
+  try {
+    const products = await Product.getAll();
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("상품 목록 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "상품 목록 조회 실패", error: error.message });
+  }
+});
+
+// Update a product by PK
+/**
+ * @swagger
+ * /products/{PK}:
+ *   put:
+ *     summary: 상품 정보를 수정합니다.
+ *     description: 주어진 PK로 상품 정보를 수정합니다.
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: PK
+ *         required: true
+ *         description: 상품 고유 ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               product_code:
+ *                 type: string
+ *               branch_id:
+ *                 type: string
+ *               product_name:
+ *                 type: string
+ *               product_price:
+ *                 type: integer
+ *               product_image:
+ *                 type: string
+ *               blurred_image:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 상품 수정 성공
+ *       404:
+ *         description: 상품을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.put("/:PK", async (req, res) => {
+  try {
+    const { PK } = req.params;
+    const {
+      product_code,
+      branch_id,
+      product_name,
+      product_price,
+      product_image,
+      blurred_image,
+    } = req.body;
+
+    const product = new Product({
+      PK,
+      product_code,
+      branch_id,
+      product_name,
+      product_price,
+      product_image,
+      blurred_image,
+    });
+    const updatedProduct = await product.update();
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error("상품 수정 오류:", error);
+    res.status(500).json({ message: "상품 수정 실패", error: error.message });
+  }
+});
+
+// Delete a product by PK
+/**
+ * @swagger
+ * /products/{PK}:
+ *   delete:
+ *     summary: 상품을 삭제합니다.
+ *     description: 주어진 PK로 상품을 삭제합니다.
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: PK
+ *         required: true
+ *         description: 상품 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 상품 삭제 성공
+ *       404:
+ *         description: 상품을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete("/:PK", async (req, res) => {
+  try {
+    const { PK } = req.params;
+    const result = await Product.deleteByPK(PK);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("상품 삭제 오류:", error);
+    res.status(500).json({ message: "상품 삭제 실패", error: error.message });
   }
 });
 
