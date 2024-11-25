@@ -3,6 +3,7 @@
 const admin = require("firebase-admin");
 const database = admin.database();
 const categoriesRef = database.ref("categories"); // 'categories' 경로 참조
+const materialsRef = database.ref("materials"); // 'materials' 경로 참조
 
 class Category {
   constructor(data) {
@@ -114,4 +115,124 @@ class Category {
   }
 }
 
-module.exports = { Category };
+class Material {
+  constructor(data) {
+    this.pk = data.pk || null; // Firebase에서 자동 생성됨
+    this.product_code = data.product_code || "A01010001"; // 기본 상품 코드
+    this.product_name = data.product_name;
+    this.product_sale = data.product_sale;
+    this.provider_name = data.provider_name;
+    this.original_image = data.original_image || null;
+    this.created_at = data.created_at || new Date().toISOString();
+    this.updated_at = data.updated_at || null;
+    this.provider_code = data.provider_code;
+    this.product_category_code = data.product_category_code;
+  }
+
+  toJSON() {
+    return {
+      product_code: this.product_code,
+      product_name: this.product_name,
+      product_sale: this.product_sale,
+      provider_name: this.provider_name,
+      original_image: this.original_image,
+      created_at: this.created_at,
+      updated_at: this.updated_at,
+      provider_code: this.provider_code,
+      product_category_code: this.product_category_code,
+    };
+  }
+
+  // Create a new material
+  async create() {
+    try {
+      const newMaterialRef = await materialsRef.push(this.toJSON());
+      this.pk = newMaterialRef.key;
+      await newMaterialRef.update({ pk: this.pk });
+      return this;
+    } catch (error) {
+      console.error("Error creating material:", error);
+      throw new Error("Failed to create material");
+    }
+  }
+
+  // Get a material by PK
+  static async getByPk(pk) {
+    try {
+      const snapshot = await materialsRef.child(pk).once("value");
+      if (!snapshot.exists()) {
+        throw new Error("Material not found");
+      }
+      return { pk, ...snapshot.val() };
+    } catch (error) {
+      console.error("Error fetching material:", error);
+      throw new Error("Failed to fetch material");
+    }
+  }
+
+  // Get all materials
+  static async getAll() {
+    try {
+      const snapshot = await materialsRef.once("value");
+      if (!snapshot.exists()) {
+        return [];
+      }
+      const materials = [];
+      snapshot.forEach((child) => {
+        materials.push({ pk: child.key, ...child.val() });
+      });
+      return materials;
+    } catch (error) {
+      console.error("Error fetching materials:", error);
+      throw new Error("Failed to fetch materials");
+    }
+  }
+
+  // Update a material by PK
+  async update() {
+    try {
+      if (!this.pk) {
+        throw new Error("Material PK is required for update");
+      }
+
+      // 현재 시간 갱신
+      this.updated_at = new Date().toISOString();
+
+      // 객체 데이터를 JSON으로 변환 및 undefined 필드 제거
+      const updateData = Object.fromEntries(
+        Object.entries(this.toJSON()).filter(
+          ([_, value]) => value !== undefined
+        )
+      );
+
+      if (Object.keys(updateData).length === 0) {
+        throw new Error("No valid fields to update");
+      }
+
+      // 데이터베이스 업데이트
+      await materialsRef.child(this.pk).update(updateData);
+
+      return this;
+    } catch (error) {
+      console.error("Error updating material:", error);
+      throw new Error("Failed to update material");
+    }
+  }
+
+  // Delete a material by PK
+  static async deleteByPk(pk) {
+    try {
+      const snapshot = await materialsRef.child(pk).once("value");
+      if (!snapshot.exists()) {
+        throw new Error("Material not found");
+      }
+      await materialsRef.child(pk).remove();
+      return { message: "Material deleted successfully" };
+    } catch (error) {
+      console.error("Error deleting material:", error);
+      throw new Error("Failed to delete material");
+    }
+  }
+}
+
+module.exports = { Category, Material };
