@@ -57,6 +57,7 @@ app.use("/", require("./routes/commonRouter"));
 app.use("/accounts", require("./routes/accountRouter"));
 app.use("/providers", require("./routes/providerRouter"));
 app.use("/branches", require("./routes/branchRouter"));
+app.use("/products", require("./routes/productRouter"));
 app.use("/bdsm", require("./routes/bdsmRouter"));
 
 /**
