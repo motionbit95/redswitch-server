@@ -1092,4 +1092,495 @@ router.post("/save-score-result", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /bdsm/statistics:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: Get BDSM statistics
+ *     description: Get BDSM statistics from the database.
+ *     responses:
+ *       200:
+ *         description: BDSM statistics retrieved successfully
+ *       500:
+ *         description: Internal server error
+ * */
+router.get("/statistics", async (req, res) => {
+  try {
+    // Firebase에서 데이터 읽어오기
+    const snapshot = await db.ref("bdsm_scores").once("value");
+
+    // 데이터가 없으면 빈 배열 반환
+    if (!snapshot.exists()) {
+      return res.json({ message: "No data found" });
+    }
+
+    const data = [];
+    snapshot.forEach((childSnapshot) => {
+      const score = childSnapshot.val(); // 자식 데이터 가져오기
+      data.push(new Bdsm.Score(score)); // Score 객체로 변환하여 배열에 추가
+    });
+
+    // 통계 계산
+    const statistics = Bdsm.Score.calculateStatistics(data);
+
+    // 결과 반환
+    res.json(statistics);
+  } catch (error) {
+    console.error("Error fetching data from Firebase: ", error);
+    res.status(500).json({ error: "Failed to fetch data from Firebase" });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/age-group/average:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: 나이대별 점수 평균 계산
+ *     description: 주어진 나이대에 대해 각 항목별 평균을 계산합니다.
+ *     parameters:
+ *       - in: query
+ *         name: ageGroup
+ *         description: 나이대
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "23~26"  # 예시를 추가해줘서 이해를 돕기
+ *     responses:
+ *       200:
+ *         description: 평균 계산 결과
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 master_mistress_total:
+ *                   type: number
+ *                   description: "Master/Mistress 평균 점수"
+ *                 slave_total:
+ *                   type: number
+ *                   description: "Slave 평균 점수"
+ *                 hunter_total:
+ *                   type: number
+ *                   description: "Hunter 평균 점수"
+ *                 prey_total:
+ *                   type: number
+ *                   description: "Prey 평균 점수"
+ *                 brat_tamer_total:
+ *                   type: number
+ *                   description: "Brat Tamer 평균 점수"
+ *                 brat_total:
+ *                   type: number
+ *                   description: "Brat 평균 점수"
+ *                 owner_total:
+ *                   type: number
+ *                   description: "Owner 평균 점수"
+ *                 pet_total:
+ *                   type: number
+ *                   description: "Pet 평균 점수"
+ *                 daddy_mommy_total:
+ *                   type: number
+ *                   description: "Daddy/Mommy 평균 점수"
+ *                 little_total:
+ *                   type: number
+ *                   description: "Little 평균 점수"
+ *                 sadist_total:
+ *                   type: number
+ *                   description: "Sadist 평균 점수"
+ *                 masochist_total:
+ *                   type: number
+ *                   description: "Masochist 평균 점수"
+ *                 spanker_total:
+ *                   type: number
+ *                   description: "Spanker 평균 점수"
+ *                 spankee_total:
+ *                   type: number
+ *                   description: "Spankee 평균 점수"
+ *                 degrader_total:
+ *                   type: number
+ *                   description: "Degrader 평균 점수"
+ *                 degradee_total:
+ *                   type: number
+ *                   description: "Degradee 평균 점수"
+ *                 rigger_total:
+ *                   type: number
+ *                   description: "Rigger 평균 점수"
+ *                 rope_bunny_total:
+ *                   type: number
+ *                   description: "Rope Bunny 평균 점수"
+ *                 dominant_total:
+ *                   type: number
+ *                   description: "Dominant 평균 점수"
+ *                 submissive_total:
+ *                   type: number
+ *                   description: "Submissive 평균 점수"
+ *                 switch_total:
+ *                   type: number
+ *                   description: "Switch 평균 점수"
+ *                 vanilla_total:
+ *                   type: number
+ *                   description: "Vanilla 평균 점수"
+ */
+router.get("/age-group/average", async (req, res) => {
+  const { ageRange } = req.query;
+
+  if (!ageRange) {
+    return res.status(400).json({ error: "나이대가 필요합니다." });
+  }
+
+  try {
+    // Firebase Realtime Database에서 bdsm_scores 데이터 읽기
+    const snapshot = await db.ref("bdsm_scores").once("value");
+    const scores = snapshot.val();
+
+    if (!scores) {
+      return res.status(404).json({ error: "데이터가 없습니다." });
+    }
+
+    // 객체 형태의 데이터를 배열로 변환
+    const scoresArray = Object.values(scores);
+
+    // 나이대별 평균 계산
+    const averages = Bdsm.Score.calculateAgeGroupAverage(scoresArray, ageRange);
+
+    if (averages) {
+      return res.json(averages);
+    } else {
+      return res
+        .status(404)
+        .json({ error: "해당 나이대의 데이터를 찾을 수 없습니다." });
+    }
+  } catch (error) {
+    console.error("Error fetching data from Firebase:", error);
+    return res
+      .status(500)
+      .json({ error: "서버 에러. 데이터를 가져올 수 없습니다." });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/gender-group/average:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: 성별별 BDSM 항목 평균 점수 계산
+ *     description: 주어진 성별에 대해 각 항목별 평균 점수를 계산합니다.
+ *     parameters:
+ *       - in: query
+ *         name: genderGroup
+ *         description: 성별
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "남자"  # 예시를 추가해줘서 이해를 돕기
+ *     responses:
+ *       200:
+ *         description: 평균 계산 결과
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 master_mistress_total:
+ *                   type: number
+ *                   description: "Master/Mistress 평균 점수"
+ *                 slave_total:
+ *                   type: number
+ *                   description: "Slave 평균 점수"
+ *                 hunter_total:
+ *                   type: number
+ *                   description: "Hunter 평균 점수"
+ *                 prey_total:
+ *                   type: number
+ *                   description: "Prey 평균 점수"
+ *                 brat_tamer_total:
+ *                   type: number
+ *                   description: "Brat Tamer 평균 점수"
+ *                 brat_total:
+ *                   type: number
+ *                   description: "Brat 평균 점수"
+ *                 owner_total:
+ *                   type: number
+ *                   description: "Owner 평균 점수"
+ *                 pet_total:
+ *                   type: number
+ *                   description: "Pet 평균 점수"
+ *                 daddy_mommy_total:
+ *                   type: number
+ *                   description: "Daddy/Mommy 평균 점수"
+ *                 little_total:
+ *                   type: number
+ *                   description: "Little 평균 점수"
+ *                 sadist_total:
+ *                   type: number
+ *                   description: "Sadist 평균 점수"
+ *                 masochist_total:
+ *                   type: number
+ *                   description: "Masochist 평균 점수"
+ *                 spanker_total:
+ *                   type: number
+ *                   description: "Spanker 평균 점수"
+ *                 spankee_total:
+ *                   type: number
+ *                   description: "Spankee 평균 점수"
+ *                 degrader_total:
+ *                   type: number
+ *                   description: "Degrader 평균 점수"
+ *                 degradee_total:
+ *                   type: number
+ *                   description: "Degradee 평균 점수"
+ *                 rigger_total:
+ *                   type: number
+ *                   description: "Rigger 평균 점수"
+ *                 rope_bunny_total:
+ *                   type: number
+ *                   description: "Rope Bunny 평균 점수"
+ *                 dominant_total:
+ *                   type: number
+ *                   description: "Dominant 평균 점수"
+ *                 submissive_total:
+ *                   type: number
+ *                   description: "Submissive 평균 점수"
+ *                 switch_total:
+ *                   type: number
+ *                   description: "Switch 평균 점수"
+ *                 vanilla_total:
+ *                   type: number
+ *                   description: "Vanilla 평균 점수"
+ *       400:
+ *         description: "성별이 지정되지 않음"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "성별이 필요합니다."
+ *       404:
+ *         description: "해당 성별의 데이터가 없음"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "데이터가 없습니다."
+ *       500:
+ *         description: "서버 에러"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "서버 에러. 데이터를 가져올 수 없습니다."
+ */
+router.get("/gender-group/average", async (req, res) => {
+  const { genderGroup } = req.query;
+
+  if (!genderGroup) {
+    return res.status(400).json({ error: "성별이 필요합니다." });
+  }
+
+  try {
+    // Firebase Realtime Database에서 bdsm_scores 데이터 읽기
+    const snapshot = await db.ref("bdsm_scores").once("value");
+    const scores = snapshot.val();
+
+    if (!scores) {
+      return res.status(404).json({ error: "데이터가 없습니다." });
+    }
+
+    // 객체 형태의 데이터를 배열로 변환
+    const scoresArray = Object.values(scores);
+
+    // 성별별 평균 계산
+    const averages = Bdsm.Score.calculateGenderGroupAverage(
+      scoresArray,
+      genderGroup
+    );
+
+    if (averages) {
+      return res.json(averages);
+    } else {
+      return res
+        .status(404)
+        .json({ error: "해당 성별의 데이터를 찾을 수 없습니다." });
+    }
+  } catch (error) {
+    console.error("Error fetching data from Firebase:", error);
+    return res
+      .status(500)
+      .json({ error: "서버 에러. 데이터를 가져올 수 없습니다." });
+  }
+});
+
+/**
+ * @swagger
+ * /bdsm/preference-group/average:
+ *   get:
+ *     tags:
+ *       - BDSM
+ *     summary: 성적 취향별 BDSM 항목 평균 점수 계산
+ *     description: 주어진 성적 취향에 대해 각 항목별 평균 점수를 계산합니다.
+ *     parameters:
+ *       - in: query
+ *         name: preferenceGroup
+ *         description: 성적 취향
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "이성애자"  # 예시를 추가해줘서 이해를 돕기
+ *     responses:
+ *       200:
+ *         description: 평균 계산 결과
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 master_mistress_total:
+ *                   type: number
+ *                   description: "Master/Mistress 평균 점수"
+ *                 slave_total:
+ *                   type: number
+ *                   description: "Slave 평균 점수"
+ *                 hunter_total:
+ *                   type: number
+ *                   description: "Hunter 평균 점수"
+ *                 prey_total:
+ *                   type: number
+ *                   description: "Prey 평균 점수"
+ *                 brat_tamer_total:
+ *                   type: number
+ *                   description: "Brat Tamer 평균 점수"
+ *                 brat_total:
+ *                   type: number
+ *                   description: "Brat 평균 점수"
+ *                 owner_total:
+ *                   type: number
+ *                   description: "Owner 평균 점수"
+ *                 pet_total:
+ *                   type: number
+ *                   description: "Pet 평균 점수"
+ *                 daddy_mommy_total:
+ *                   type: number
+ *                   description: "Daddy/Mommy 평균 점수"
+ *                 little_total:
+ *                   type: number
+ *                   description: "Little 평균 점수"
+ *                 sadist_total:
+ *                   type: number
+ *                   description: "Sadist 평균 점수"
+ *                 masochist_total:
+ *                   type: number
+ *                   description: "Masochist 평균 점수"
+ *                 spanker_total:
+ *                   type: number
+ *                   description: "Spanker 평균 점수"
+ *                 spankee_total:
+ *                   type: number
+ *                   description: "Spankee 평균 점수"
+ *                 degrader_total:
+ *                   type: number
+ *                   description: "Degrader 평균 점수"
+ *                 degradee_total:
+ *                   type: number
+ *                   description: "Degradee 평균 점수"
+ *                 rigger_total:
+ *                   type: number
+ *                   description: "Rigger 평균 점수"
+ *                 rope_bunny_total:
+ *                   type: number
+ *                   description: "Rope Bunny 평균 점수"
+ *                 dominant_total:
+ *                   type: number
+ *                   description: "Dominant 평균 점수"
+ *                 submissive_total:
+ *                   type: number
+ *                   description: "Submissive 평균 점수"
+ *                 switch_total:
+ *                   type: number
+ *                   description: "Switch 평균 점수"
+ *                 vanilla_total:
+ *                   type: number
+ *                   description: "Vanilla 평균 점수"
+ *       400:
+ *         description: "성적 취향이 지정되지 않음"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "성적 취향이 필요합니다."
+ *       404:
+ *         description: "해당 성적 취향의 데이터가 없음"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "데이터가 없습니다."
+ *       500:
+ *         description: "서버 에러"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "서버 에러. 데이터를 가져올 수 없습니다."
+ */
+router.get("/preference-group/average", async (req, res) => {
+  const { preferenceGroup } = req.query;
+
+  if (!preferenceGroup) {
+    return res.status(400).json({ error: "성적 취향이 필요합니다." });
+  }
+
+  try {
+    // Firebase Realtime Database에서 bdsm_scores 데이터 읽기
+    const snapshot = await db.ref("bdsm_scores").once("value");
+    const scores = snapshot.val();
+
+    if (!scores) {
+      return res.status(404).json({ error: "데이터가 없습니다." });
+    }
+
+    // 객체 형태의 데이터를 배열로 변환
+    const scoresArray = Object.values(scores);
+
+    // 성적 취향별 평균 계산
+    const averages = Bdsm.Score.calculatePreferenceGroupAverage(
+      scoresArray,
+      preferenceGroup
+    );
+
+    if (averages) {
+      return res.json(averages);
+    } else {
+      return res
+        .status(404)
+        .json({ error: "해당 성적 취향의 데이터를 찾을 수 없습니다." });
+    }
+  } catch (error) {
+    console.error("Error fetching data from Firebase:", error);
+    return res
+      .status(500)
+      .json({ error: "서버 에러. 데이터를 가져올 수 없습니다." });
+  }
+});
+
 module.exports = router;
