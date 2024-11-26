@@ -1,230 +1,145 @@
 const express = require("express");
-const axios = require("axios");
+const bodyParser = require("body-parser");
 const crypto = require("crypto");
-const qs = require("querystring");
+const path = require("path");
+const { default: axios } = require("axios");
+var router = express.Router();
+const qs = require("qs");
 
-const router = express.Router();
+const merchantKey =
+  "0KHf4qt04B6LEBwZ8M8z5bN/p/I0VQaaMy/SiQfjmVyYFpv6R+OB9toybcTYoOak09rVE4ytGLuvEs5wUEt3pA=="; // 상점키
+const merchantID = "DMGS00001m"; // 상점아이디
 
-const { JSDOM } = require("jsdom");
+// Function to get current date and time in yyyyMMddHHmmss format
+function getyyyyMMddHHmmss() {
+  const now = new Date();
+  const yyyyMMddHHmmss =
+    now.getFullYear() +
+    "" +
+    (now.getMonth() + 1).toString().padStart(2, "0") +
+    "" +
+    now.getDate().toString().padStart(2, "0") +
+    "" +
+    now.getHours().toString().padStart(2, "0") +
+    "" +
+    now.getMinutes().toString().padStart(2, "0") +
+    "" +
+    now.getSeconds().toString().padStart(2, "0");
+  return yyyyMMddHHmmss;
+}
 
-const cors = require("cors");
-router.use(cors());
+// Function to encrypt data using SHA-256
+function encryptSHA256(data) {
+  return crypto.createHash("sha256").update(data).digest("hex");
+}
 
-require("dotenv").config();
+router.get("/", (req, res) => {
+  console.log("PG Sample page");
 
-/**
- * @swagger
- * tags:
- *   name: Payments
- *   description: 카드 결제 API
- */
+  console.log(req.query.order_id);
+  console.log(req.query.amount);
 
-/**
- * @swagger
- * /payments/request:
- *   post:
- *     summary: 카드 결제 요청
- *     description: 카드 결제 요청을 보내는 API
- *     requestBody:
- *       required: true
- *       content:
- *         application/x-www-form-urlencoded:
- *           schema:
- *             type: object
- *             properties:
- *               goodsNm:
- *                 type: string
- *                 description: 상품명
- *                 example: "상품명"
- *               goodsAmt:
- *                 type: number
- *                 description: 상품 가격
- *                 example: 10000
- *               ordNm:
- *                 type: string
- *                 description: 주문자명
- *                 example: "주문자명"
- *               ordTel:
- *                 type: string
- *                 description: 주문자 전화번호
- *                 example: "01012345678"
- *               ordEmail:
- *                 type: string
- *                 description: 주문자 이메일
- *                 example: "user@example.com"
- *               ordNo:
- *                 type: string
- *                 description: 주문 번호
- *                 example: "1234567890"
- *     responses:
- *       200:
- *         description: 요청 성공
- *         content:
- *           text/html:
- *             schema:
- *               type: string
- *       400:
- *         description: 요청 실패
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "필수 파라미터가 누락되었습니다."
- */
-router.post("/request", (req, res) => {
-  const { goodsNm, goodsAmt, ordNm, ordTel, ordEmail, ordNo } = req.body;
+  // 주문 정보를 가지고 오기
 
-  // 필수 파라미터 검증
-  if (!goodsAmt || !goodsNm || !ordNm || !ordTel || !ordEmail || !ordNo) {
-    return res.status(400).json({ message: "필수 파라미터가 누락되었습니다." });
-  }
-
-  // 결제 관련 데이터
-  const merchantID = process.env.MERCHANT_ID;
   const ediDate = getyyyyMMddHHmmss();
-  const encData = encryptData(
-    `${merchantID}${ediDate}${goodsAmt}${process.env.MERCHANT_KEY}`
-  );
+  const goodsAmt = req.query.amount; // 결제상품금액
+  const encData = encryptSHA256(merchantID + ediDate + goodsAmt + merchantKey);
 
-  // HTML 템플릿 생성
-  const paymentForm = `
-      <html>
-        <body>
-          <form
-            name="paymentForm"
-            method="POST"
-            action="https://api.payster.co.kr/payInit_hash.do"
-          >
-            <input type="hidden" name="payMethod" value="card" />
-            <input type="hidden" name="trxCd" value="0" />
-            <input type="hidden" name="mid" value="${merchantID}" />
-            <input type="hidden" name="goodsNm" value="${goodsNm}" />
-            <input type="hidden" name="goodsAmt" value="${goodsAmt}" />
-            <input type="hidden" name="ordNm" value="${ordNm}" />
-            <input type="hidden" name="ordTel" value="${ordTel}" />
-            <input type="hidden" name="ordEmail" value="${ordEmail}" />
-            <input type="hidden" name="ordNo" value="${ordNo}" />
-            <input type="hidden" name="ediDate" value="${ediDate}" />
-            <input type="hidden" name="encData" value="${encData}" />
-            <input type="hidden" name="returnUrl" value="http://localhost:8080/payments/result" />
-          </form>
-  
-          <script type="text/javascript">
-            // 결제창 호출 함수
-            function doPaySubmit() {
-              document.paymentForm.submit();
-            }
-  
-            window.onload = function () {
-              doPaySubmit();
-            };
-          </script>
-        </body>
-      </html>
-    `;
+  console.log("encData : " + encData);
 
-  // 클라이언트로 HTML 템플릿 반환
-  res.status(200).send(paymentForm);
+  res.render("pg", {
+    merchantID,
+    goodsNm: "레드스위치",
+    goodsAmt,
+    ordNm: "레드스위치",
+    ordTel: "01000000000",
+    ordNo: req.query.order_id,
+    returnUrl: "http://localhost:8080/payments/payResult",
+    ediDate,
+    encData,
+  });
 });
 
-/**
- * @swagger
- * /payments/result:
- *   post:
- *     summary: 결제 결과 처리
- *     description: 결제 결과를 처리하는 API
- *     responses:
- *       200:
- *         description: 요청 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "결제 성공"
- *       400:
- *         description: 요청 실패
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "결제 실패"
- */
-router.post("/result", async (req, res) => {
-  const {
-    resultCode,
-    resultMsg,
-    tid,
-    payMethod,
-    ediDate,
-    mid,
-    goodsAmt,
-    signData,
-  } = req.body;
+router.post("/payResult", (req, res) => {
+  console.log(req.body);
 
-  if (resultCode !== "0000") {
-    return res.status(400).json({ message: "결제 인증 실패", resultMsg });
-  }
-
-  const encData = encryptData(
-    mid + ediDate + goodsAmt + process.env.MERCHANT_KEY
+  const encData = encryptSHA256(
+    merchantID + req.body.ediDate + req.body.goodsAmt + merchantKey
   );
 
-  const requestData = new URLSearchParams({
-    tid,
-    mid,
-    goodsAmt,
-    ediDate,
-    charSet: "utf-8",
-    encData,
-    signData,
-  }).toString();
-
-  try {
-    const response = await axios.post(
+  // 승인을 요청합니다. - content-type 변경
+  axios
+    .post(
       "https://api.payster.co.kr/payment.do",
-      requestData,
+      { ...req.body, encData: encData },
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Charset: "utf-8",
+          Charset: "UTF-8",
         },
       }
-    );
-
-    const resultData = JSON.parse(response.data);
-    res.status(200).json(resultData);
-  } catch (error) {
-    console.error("결제 승인 요청 실패:", error);
-    res.status(500).json({ message: "결제 승인 요청 실패" });
-  }
+    )
+    .then(async (response) => {
+      console.log("응답결과:", response.data, req.body.ordNo);
+      // Assuming `response.data` is your response object
+      res.redirect(
+        "http://localhost:3000/payment?data=" +
+          encodeURIComponent("{" + qs.stringify(response.data) + "}")
+      );
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 });
 
-// Helper: 현재 날짜와 시간을 yyyyMMddHHmmss 형식으로 반환
-function getyyyyMMddHHmmss() {
-  const date = new Date();
-  const yyyy = date.getFullYear();
-  const MM = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const HH = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  return `${yyyy}${MM}${dd}${HH}${mm}${ss}`;
-}
+router.get("/payCancel", (req, res) => {
+  const encData = encryptSHA256(
+    merchantID + req.query.ediDate + req.query.canAmt + merchantKey
+  );
 
-// Helper: SHA-256 암호화 함수
-function encryptData(data) {
-  const hash = crypto.createHash("sha256");
-  hash.update(data);
-  return hash.digest("hex");
-}
+  console.log(encData);
+
+  let data = {
+    tid: req.query.tid,
+    ordNo: req.query.ordNo,
+    canAmt: req.query.canAmt,
+    ediDate: req.query.ediDate,
+  };
+
+  axios
+    .post(
+      "https://api.payster.co.kr/payment.cancel",
+      {
+        tid: data.tid,
+        ordNo: data.ordNo,
+        canAmt: data.canAmt,
+        canMsg: "지점사정", // 취소사유
+        partCanFlg: "0",
+        encData: encData,
+        ediDate: data.ediDate,
+      },
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Charset: "UTF-8",
+        },
+      }
+    )
+    .then((response) => {
+      console.log(response.data);
+      // 환불 결과를 저장합니다.
+      // res.send(response.data);
+      res.redirect("http://localhost:3000/payment");
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+});
+
+router.post("/sendResponse", async (req, res) => {
+  console.log(req.body);
+
+  res.send(req.body);
+});
 
 module.exports = router;

@@ -13,6 +13,10 @@ const cors = require("cors");
 // 모든요청에 cors 적용
 app.use(cors());
 
+// view engine setup
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+
 // Firebase Admin SDK
 var admin = require("firebase-admin");
 
