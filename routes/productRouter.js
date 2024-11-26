@@ -1,6 +1,13 @@
 const express = require("express");
 const admin = require("firebase-admin");
-const { Category, Material, Product } = require("../model/Product");
+const {
+  Category,
+  Material,
+  Product,
+  OrderingHistory,
+  OrderingProduct,
+  Inventory,
+} = require("../model/Product");
 
 const router = express.Router();
 
@@ -26,6 +33,27 @@ router.use(cors());
  * tags:
  *   name: Products
  *   description: 판매상품 CRUD API
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: OrderingHistory
+ *   description: 발주 이력 CRUD API
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: OrderingProduct
+ *   description: 발주 상품 CRUD API
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Inventories
+ *   description: 재고 CRUD API
  */
 
 // Create a new category
@@ -589,6 +617,754 @@ router.delete("/materials/:pk", async (req, res) => {
   } catch (error) {
     console.error("물자 삭제 오류:", error);
     res.status(500).json({ message: "물자 삭제 실패", error: error.message });
+  }
+});
+
+// Create a new ordering history
+/**
+ * @swagger
+ * /products/ordering_history:
+ *   post:
+ *     summary: 새로운 발주 이력을 생성합니다.
+ *     description: 제공된 정보를 바탕으로 새로운 발주 이력을 생성합니다.
+ *     tags: [OrderingHistory]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider_id
+ *             properties:
+ *               provider_id:
+ *                 type: string
+ *                 description: 거래처 ID
+ *     responses:
+ *       201:
+ *         description: 발주 이력 생성 성공
+ *       400:
+ *         description: 필수 필드 누락
+ *       500:
+ *         description: 서버 오류
+ */
+router.post("/ordering_history", async (req, res) => {
+  try {
+    const { provider_id, arrive } = req.body;
+
+    if (!provider_id) {
+      return res.status(400).json({ message: "필수 필드가 누락되었습니다." });
+    }
+
+    const history = new OrderingHistory(req.body);
+    const createdHistory = await history.create();
+    res.status(201).json(createdHistory);
+  } catch (error) {
+    console.error("발주 이력 생성 오류:", error);
+    res
+      .status(500)
+      .json({ message: "발주 이력 생성 실패", error: error.message });
+  }
+});
+
+// Get an ordering history by PK
+/**
+ * @swagger
+ * /products/ordering_history/{pk}:
+ *   get:
+ *     summary: 발주 이력 정보를 조회합니다.
+ *     description: 주어진 PK로 발주 이력 정보를 조회합니다.
+ *     tags: [OrderingHistory]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 발주 이력 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 발주 이력 조회 성공
+ *       404:
+ *         description: 발주 이력을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/ordering_history/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const history = await OrderingHistory.getByPK(pk);
+    res.status(200).json(history);
+  } catch (error) {
+    console.error("발주 이력 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "발주 이력 조회 실패", error: error.message });
+  }
+});
+
+// Get all ordering histories
+/**
+ * @swagger
+ * /products/ordering_history:
+ *   get:
+ *     summary: 모든 발주 이력을 조회합니다.
+ *     description: 모든 발주 이력을 조회하여 반환합니다.
+ *     tags: [OrderingHistory]
+ *     responses:
+ *       200:
+ *         description: 발주 이력 리스트 조회 성공
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/ordering_history", async (req, res) => {
+  console.log("발주 이력 목록 조회");
+  try {
+    const histories = await OrderingHistory.getAll();
+    res.status(200).json(histories);
+  } catch (error) {
+    console.error("발주 이력 목록 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "발주 이력 목록 조회 실패", error: error.message });
+  }
+});
+
+// Update an ordering history by PK
+/**
+ * @swagger
+ * /products/ordering_history/{pk}:
+ *   put:
+ *     summary: 발주 이력 정보를 수정합니다.
+ *     description: 주어진 PK로 발주 이력 정보를 수정합니다.
+ *     tags: [OrderingHistory]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 발주 이력 고유 ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               provider_id:
+ *                 type: string
+ *                 description: 거래처 ID
+ *               arrive:
+ *                 type: number
+ *                 description: 발주 도착 여부
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: 발주 이력 수정 성공
+ *       404:
+ *         description: 발주 이력을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.put("/ordering_history/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const { provider_id, arrive } = req.body;
+
+    const history = new OrderingHistory({ pk, provider_id, arrive });
+    const updatedHistory = await history.update();
+    res.status(200).json(updatedHistory);
+  } catch (error) {
+    console.error("발주 이력 수정 오류:", error);
+    res
+      .status(500)
+      .json({ message: "발주 이력 수정 실패", error: error.message });
+  }
+});
+
+// Delete an ordering history by PK
+/**
+ * @swagger
+ * /products/ordering_history/{pk}:
+ *   delete:
+ *     summary: 발주 이력을 삭제합니다.
+ *     description: 주어진 PK로 발주 이력을 삭제합니다.
+ *     tags: [OrderingHistory]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 발주 이력 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 발주 이력 삭제 성공
+ *       404:
+ *         description: 발주 이력을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete("/ordering_history/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const result = await OrderingHistory.deleteByPK(pk);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("발주 이력 삭제 오류:", error);
+    res
+      .status(500)
+      .json({ message: "발주 이력 삭제 실패", error: error.message });
+  }
+});
+
+// Create a new ordering product
+/**
+ * @swagger
+ * /products/ordering_product:
+ *   post:
+ *     summary: 새로운 주문 상품을 생성합니다.
+ *     description: 제공된 정보를 바탕으로 새로운 주문 상품을 생성합니다.
+ *     tags: [OrderingProduct]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - history_pk
+ *               - provider_id
+ *               - ordered_cnt
+ *               - material_pk
+ *               - product_code
+ *               - provider_code
+ *             properties:
+ *               history_pk:
+ *                 type: string
+ *                 description: 관련 주문 이력 PK
+ *               provider_id:
+ *                 type: string
+ *                 description: 제공자 ID
+ *               ordered_cnt:
+ *                 type: string
+ *                 description: 주문 개수
+ *               material_pk:
+ *                 type: string
+ *                 description: 관련 자재 PK
+ *               product_code:
+ *                 type: string
+ *                 description: 상품 코드
+ *               provider_code:
+ *                 type: string
+ *                 description: 제공자 코드
+ *     responses:
+ *       201:
+ *         description: 주문 상품 생성 성공
+ *       400:
+ *         description: 필수 필드 누락
+ *       500:
+ *         description: 서버 오류
+ */
+router.post("/ordering_product", async (req, res) => {
+  try {
+    const {
+      history_pk,
+      provider_id,
+      ordered_cnt,
+      material_pk,
+      product_code,
+      provider_code,
+    } = req.body;
+
+    if (
+      !history_pk ||
+      !provider_id ||
+      !ordered_cnt ||
+      !material_pk ||
+      !product_code ||
+      !provider_code
+    ) {
+      return res.status(400).json({ message: "필수 필드가 누락되었습니다." });
+    }
+
+    const product = new OrderingProduct(req.body);
+    const createdProduct = await product.create();
+    res.status(201).json(createdProduct);
+  } catch (error) {
+    console.error("주문 상품 생성 오류:", error);
+    res
+      .status(500)
+      .json({ message: "주문 상품 생성 실패", error: error.message });
+  }
+});
+
+// Get an ordering product by PK
+/**
+ * @swagger
+ * /products/ordering_product/{pk}:
+ *   get:
+ *     summary: 주문 상품 정보를 조회합니다.
+ *     description: 주어진 PK로 주문 상품 정보를 조회합니다.
+ *     tags: [OrderingProduct]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 주문 상품 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 주문 상품 조회 성공
+ *       404:
+ *         description: 주문 상품을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/ordering_product/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const product = await OrderingProduct.getByPK(pk);
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("주문 상품 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "주문 상품 조회 실패", error: error.message });
+  }
+});
+
+// Get all ordering products
+/**
+ * @swagger
+ * /products/ordering_product:
+ *   get:
+ *     summary: 모든 주문 상품을 조회합니다.
+ *     description: 모든 주문 상품을 조회하여 반환합니다.
+ *     tags: [OrderingProduct]
+ *     responses:
+ *       200:
+ *         description: 주문 상품 리스트 조회 성공
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/ordering_product", async (req, res) => {
+  try {
+    const products = await OrderingProduct.getAll();
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("주문 상품 목록 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "주문 상품 목록 조회 실패", error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /products/ordering-products/history/{history_pk}:
+ *   get:
+ *     summary: 특정 history_pk로 주문 제품 목록을 조회합니다.
+ *     description: 지정된 history_pk를 기준으로 모든 주문 제품을 조회하여 반환합니다.
+ *     tags: [OrderingProduct]
+ *     parameters:
+ *       - in: path
+ *         name: history_pk
+ *         required: true
+ *         description: 주문 내역 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 주문 제품 리스트 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       404:
+ *         description: 주문 제품을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/ordering-products/history/:history_pk", async (req, res) => {
+  try {
+    const { history_pk } = req.params;
+
+    // 모든 데이터 조회 후 history_pk로 필터링
+    const allProducts = await OrderingProduct.getAll();
+    const filteredProducts = allProducts.filter(
+      (product) => product.history_pk === history_pk
+    );
+
+    if (filteredProducts.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "해당 history_pk의 데이터가 없습니다." });
+    }
+
+    res.status(200).json(filteredProducts);
+  } catch (error) {
+    console.error("주문 제품 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "주문 제품 조회 실패", error: error.message });
+  }
+});
+
+// Update an ordering product by PK
+/**
+ * @swagger
+ * /products/ordering_product/{pk}:
+ *   put:
+ *     summary: 주문 상품 정보를 수정합니다.
+ *     description: 주어진 PK로 주문 상품 정보를 수정합니다.
+ *     tags: [OrderingProduct]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 주문 상품 고유 ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               history_pk:
+ *                 type: string
+ *               provider_id:
+ *                 type: string
+ *               ordered_cnt:
+ *                 type: string
+ *               material_pk:
+ *                 type: string
+ *               product_code:
+ *                 type: string
+ *               provider_code:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 주문 상품 수정 성공
+ *       404:
+ *         description: 주문 상품을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.put("/ordering_product/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const {
+      history_pk,
+      provider_id,
+      ordered_cnt,
+      material_pk,
+      product_code,
+      provider_code,
+    } = req.body;
+
+    const product = new OrderingProduct({
+      pk,
+      history_pk,
+      provider_id,
+      ordered_cnt,
+      material_pk,
+      product_code,
+      provider_code,
+    });
+    const updatedProduct = await product.update();
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error("주문 상품 수정 오류:", error);
+    res
+      .status(500)
+      .json({ message: "주문 상품 수정 실패", error: error.message });
+  }
+});
+
+// Delete an ordering product by PK
+/**
+ * @swagger
+ * /products/ordering_product/{pk}:
+ *   delete:
+ *     summary: 주문 상품을 삭제합니다.
+ *     description: 주어진 PK로 주문 상품을 삭제합니다.
+ *     tags: [OrderingProduct]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 주문 상품 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 주문 상품 삭제 성공
+ *       404:
+ *         description: 주문 상품을 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete("/ordering_product/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const result = await OrderingProduct.deleteByPK(pk);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("주문 상품 삭제 오류:", error);
+    res
+      .status(500)
+      .json({ message: "주문 상품 삭제 실패", error: error.message });
+  }
+});
+
+// Create Inventory
+/**
+ * @swagger
+ * /products/inventories:
+ *   post:
+ *     summary: 새로운 재고를 생성합니다.
+ *     description: 새로운 재고를 생성합니다. 필수 필드가 누락되면 실패합니다.
+ *     tags: [Inventories]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - product_pk
+ *               - branch_id
+ *               - provider_id
+ *             properties:
+ *               inventory_cnt:
+ *                 type: string
+ *                 description: 현재 재고 수량
+ *               inventory_min_cnt:
+ *                 type: string
+ *                 description: 최소 재고 수량
+ *               product_pk:
+ *                 type: string
+ *                 description: 상품의 고유 PK
+ *               product_code:
+ *                 type: string
+ *                 default: A01010001
+ *                 description: 상품 코드
+ *               branch_id:
+ *                 type: string
+ *                 description: 지점 ID
+ *               provider_id:
+ *                 type: string
+ *                 description: 거래처 ID
+ *     responses:
+ *       201:
+ *         description: 재고 생성 성공
+ *       400:
+ *         description: 필수 필드 누락
+ *       500:
+ *         description: 서버 오류
+ */
+router.post("/inventories", async (req, res) => {
+  try {
+    const {
+      inventory_cnt,
+      inventory_min_cnt,
+      product_pk,
+      product_code,
+      branch_id,
+      provider_id,
+    } = req.body;
+
+    if (!product_pk || !branch_id || !provider_id) {
+      return res.status(400).json({ message: "필수 필드가 누락되었습니다." });
+    }
+
+    const inventory = new Inventory(req.body);
+    const createdInventory = await inventory.create();
+    res.status(201).json(createdInventory);
+  } catch (error) {
+    console.error("Inventory 생성 오류:", error);
+    res
+      .status(500)
+      .json({ message: "Inventory 생성 실패", error: error.message });
+  }
+});
+
+// Get Inventory by PK
+/**
+ * @swagger
+ * /products/inventories/{pk}:
+ *   get:
+ *     summary: 특정 재고 정보를 조회합니다.
+ *     description: 주어진 PK를 통해 특정 재고 정보를 반환합니다.
+ *     tags: [Inventories]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 재고의 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 재고 조회 성공
+ *       404:
+ *         description: 재고를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/inventories/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const inventory = await Inventory.getByPK(pk);
+    res.status(200).json(inventory);
+  } catch (error) {
+    console.error("Inventory 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "Inventory 조회 실패", error: error.message });
+  }
+});
+
+// Get All Inventories
+/**
+ * @swagger
+ * /products/inventories:
+ *   get:
+ *     summary: 모든 재고를 조회합니다.
+ *     description: 모든 재고 정보를 반환합니다.
+ *     tags: [Inventories]
+ *     responses:
+ *       200:
+ *         description: 재고 목록 조회 성공
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/inventories", async (req, res) => {
+  try {
+    const inventories = await Inventory.getAll();
+    res.status(200).json(inventories);
+  } catch (error) {
+    console.error("모든 Inventory 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "모든 Inventory 조회 실패", error: error.message });
+  }
+});
+
+// Update Inventory by PK
+/**
+ * @swagger
+ * /products/inventories/{pk}:
+ *   put:
+ *     summary: 특정 재고를 수정합니다.
+ *     description: 주어진 PK를 통해 특정 재고 정보를 수정합니다.
+ *     tags: [Inventories]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 재고의 고유 ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               inventory_cnt:
+ *                 type: string
+ *               inventory_min_cnt:
+ *                 type: string
+ *               product_pk:
+ *                 type: string
+ *               product_code:
+ *                 type: string
+ *               branch_id:
+ *                 type: string
+ *               provider_id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 재고 수정 성공
+ *       404:
+ *         description: 재고를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.put("/inventories/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const {
+      inventory_cnt,
+      inventory_min_cnt,
+      product_pk,
+      product_code,
+      branch_id,
+      provider_id,
+    } = req.body;
+
+    const inventory = new Inventory({
+      pk,
+      inventory_cnt,
+      inventory_min_cnt,
+      product_pk,
+      product_code,
+      branch_id,
+      provider_id,
+    });
+
+    const updatedInventory = await inventory.update();
+    res.status(200).json(updatedInventory);
+  } catch (error) {
+    console.error("Inventory 수정 오류:", error);
+    res
+      .status(500)
+      .json({ message: "Inventory 수정 실패", error: error.message });
+  }
+});
+
+// Delete Inventory by PK
+/**
+ * @swagger
+ * /products/inventories/{pk}:
+ *   delete:
+ *     summary: 특정 재고를 삭제합니다.
+ *     description: 주어진 PK를 통해 특정 재고 정보를 삭제합니다.
+ *     tags: [Inventories]
+ *     parameters:
+ *       - in: path
+ *         name: pk
+ *         required: true
+ *         description: 재고의 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 재고 삭제 성공
+ *       404:
+ *         description: 재고를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete("/inventories/:pk", async (req, res) => {
+  try {
+    const { pk } = req.params;
+    const result = await Inventory.deleteByPK(pk);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Inventory 삭제 오류:", error);
+    res
+      .status(500)
+      .json({ message: "Inventory 삭제 실패", error: error.message });
   }
 });
 
