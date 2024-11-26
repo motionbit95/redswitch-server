@@ -2,6 +2,12 @@
 const express = require("express");
 const app = express();
 const port = 8080;
+const path = require("path");
+
+// JSON 형식의 요청 본문을 파싱
+app.use(express.json());
+// URL-encoded 형식의 요청 본문을 파싱
+app.use(express.urlencoded({ extended: true }));
 
 const cors = require("cors");
 // 모든요청에 cors 적용
@@ -50,6 +56,10 @@ app.use(
   })
 );
 
+// view engine setup
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+
 // routes
 app.use(express.json());
 
@@ -58,6 +68,7 @@ app.use("/accounts", require("./routes/accountRouter"));
 app.use("/providers", require("./routes/providerRouter"));
 app.use("/branches", require("./routes/branchRouter"));
 app.use("/products", require("./routes/productRouter"));
+app.use("/payments", require("./routes/paymentRouter"));
 app.use("/bdsm", require("./routes/bdsmRouter"));
 
 /**

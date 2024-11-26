@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const admin = require("firebase-admin");
-const Bdsm = require("../model/bdsm");
+const Bdsm = require("../model/BDSM");
 
 const cors = require("cors");
 router.use(cors());
