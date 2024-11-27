@@ -390,6 +390,9 @@ router.delete("/categories/:pk", async (req, res) => {
  *               product_category_code:
  *                 type: string
  *                 description: 카테고리 PK
+ *               provider_id:
+ *                 type: string
+ *                 description: 거래처 고유 ID
  *     responses:
  *       201:
  *         description: 물자 생성 성공
@@ -406,6 +409,7 @@ router.post("/materials", async (req, res) => {
       provider_name,
       provider_code,
       product_category_code,
+      provider_id,
     } = req.body;
 
     if (
@@ -413,7 +417,8 @@ router.post("/materials", async (req, res) => {
       !product_sale ||
       !provider_name ||
       !provider_code ||
-      !product_category_code
+      !product_category_code ||
+      !provider_id
     ) {
       return res.status(400).json({ message: "필수 필드가 누락되었습니다." });
     }

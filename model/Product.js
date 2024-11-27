@@ -119,6 +119,7 @@ class Category {
   }
 }
 
+// 물자
 class Material {
   constructor(data) {
     this.pk = data.pk || null; // Firebase에서 자동 생성됨
@@ -131,6 +132,7 @@ class Material {
     this.updated_at = data.updated_at || null;
     this.provider_code = data.provider_code;
     this.product_category_code = data.product_category_code;
+    this.provider_id = data.provider_id;
   }
 
   toJSON() {
@@ -144,6 +146,7 @@ class Material {
       updated_at: this.updated_at,
       provider_code: this.provider_code,
       product_category_code: this.product_category_code,
+      provider_id: this.provider_id,
     };
   }
 
