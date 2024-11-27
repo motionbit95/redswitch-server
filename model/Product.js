@@ -186,7 +186,30 @@ class Material {
       }
       const materials = [];
       snapshot.forEach((child) => {
-        materials.push({ pk: child.key, ...child.val() });
+        const material = child.val();
+        materials.push({ pk: child.key, ...material });
+      });
+      return materials;
+    } catch (error) {
+      console.error("Error fetching materials:", error);
+      throw new Error("Failed to fetch materials");
+    }
+  }
+
+  // Search materials by provider_id
+  static async search(provider_id) {
+    console.log("provider_id: ", provider_id);
+    try {
+      const snapshot = await materialsRef.once("value");
+      if (!snapshot.exists()) {
+        return [];
+      }
+      const materials = [];
+      snapshot.forEach((child) => {
+        const material = child.val();
+        if (material.provider_id === provider_id) {
+          materials.push({ pk: child.key, ...material });
+        }
       });
       return materials;
     } catch (error) {

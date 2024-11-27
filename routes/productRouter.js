@@ -467,7 +467,7 @@ router.get("/materials/:pk", async (req, res) => {
   }
 });
 
-// Get all materials
+// Get all materials - search
 /**
  * @swagger
  * /products/materials:
@@ -517,6 +517,74 @@ router.get("/materials/:pk", async (req, res) => {
 router.get("/materials", async (req, res) => {
   try {
     const materials = await Material.getAll();
+    res.status(200).json(materials);
+  } catch (error) {
+    console.error("물자 목록 조회 오류:", error);
+    res
+      .status(500)
+      .json({ message: "물자 목록 조회 실패", error: error.message });
+  }
+});
+
+// Search materials
+/**
+ * @swagger
+ * /products/materials/search/{provider_id}:
+ *   get:
+ *     summary: 거래처별 물자 목록을 조회합니다.
+ *     description: 거래처별 물자 목록을 조회하여 반환합니다.
+ *     tags: [Materials]
+ *     parameters:
+ *       - in: path
+ *         name: provider_id
+ *         required: true
+ *         description: 거래처 고유 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 거래처별 물자 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 pk:
+ *                   type: string
+ *                   description: 물자 고유 ID
+ *                 product_code:
+ *                   type: string
+ *                   description: 상품 코드
+ *                 product_name:
+ *                   type: string
+ *                   description: 제품명
+ *                 product_sale:
+ *                   type: string
+ *                   description: 원가
+ *                 provider_name:
+ *                   type: string
+ *                   description: 거래처명
+ *                 original_image:
+ *                   type: string
+ *                   description: 제품 이미지
+ *                 provider_code:
+ *                   type: string
+ *                   description: 거래처 PK
+ *                 product_category_code:
+ *                   type: string
+ *                   description: 카테고리 PK
+ *                 created_at:
+ *                   type: string
+ *                   description: 물자 생성 일시
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/materials/search/:provider_id", async (req, res) => {
+  // 거래처 기준 함수로 수정
+  const { provider_id } = req.params;
+  try {
+    const materials = await Material.search(provider_id);
     res.status(200).json(materials);
   } catch (error) {
     console.error("물자 목록 조회 오류:", error);
